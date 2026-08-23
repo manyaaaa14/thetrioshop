@@ -178,27 +178,36 @@ export default function TrioShopApp() {
   const wishlistCount = Object.keys(wishlist).length;
 
   function addToCart(product, opts = {}) {
-    if (!product) return;
-    if (product.stock <= 0) { showToast("Out of stock", "warn"); return; }
-    const addQty = opts.qty || 1;
+    if (!product || !product.id) return;
+
+    const safeStock = Number(product.stock) || 0;
+    const addQty = Number(opts.qty) > 0 ? Number(opts.qty) : 1;
+
+    if (safeStock <= 0) {
+      showToast("Out of stock", "warn");
+      return;
+    }
+
     setCart((prev) => {
-      const existing = prev[product.id];
-      const newQty = (existing?.qty || 0) + addQty;
-      if (newQty > product.stock) {
-        showToast(`Only ${product.stock} left in stock`, "warn");
+      const existing = prev[product.id] || {};
+      const currentQty = Number(existing.qty) || 0;
+      const newQty = currentQty + addQty;
+
+      if (newQty > safeStock) {
+        showToast(`Only ${safeStock} left in stock`, "warn");
         return prev;
       }
+
       const newCart = {
         ...prev,
         [product.id]: {
           qty: newQty,
-          color: opts.color || existing?.color || product.variants?.color?.[0] || null,
+          color: opts.color || existing.color || product.variants?.color?.[0] || null,
         },
       };
-      // Sync to backend if logged in (fire-and-forget)
+
       if (user) api.cart.sync(newCart).catch(() => {});
-      // Show success toast after state is updated
-      setTimeout(() => showToast(`Added to cart (${newQty})`, "cart"), 0);
+      showToast(`Added to cart (${newQty})`, "cart");
       return newCart;
     });
   }
@@ -330,7 +339,7 @@ export default function TrioShopApp() {
   }
 
   return (
-    <div style={{ fontFamily: "'Inter', system-ui, sans-serif", background: "#F1F3F6", minHeight: "100vh", color: "#212121" }}>
+    <div style={{ fontFamily: "'Inter', system-ui, sans-serif", background: "#F1F3F6", minHeight: "100vh", color: "#212121", width: "100%", overflowX: "hidden" }}>
       <style>{GLOBAL_CSS}</style>
       <Header ctx={ctx} menuOpen={menuOpen} setMenuOpen={setMenuOpen} setAuthModal={setAuthModal} cartCount={cartCount} wishlistCount={wishlistCount} />
       {menuOpen && <MobileMenu ctx={ctx} setMenuOpen={setMenuOpen} setAuthModal={setAuthModal} />}

@@ -141,8 +141,8 @@ export default function CheckoutPage({ ctx, setAuthModal }) {
   }
 
   return (
-    <div className="fade-in" style={{ maxWidth: 1000, margin: "16px auto", padding: "0 14px", display: "flex", gap: 20 }}>
-      <div style={{ flex: 2, minWidth: 0 }}>
+    <div className="fade-in checkout-shell" style={{ maxWidth: 1000, margin: "16px auto", padding: "0 14px", display: "flex", gap: 20 }}>
+      <div className="checkout-main" style={{ flex: 2, minWidth: 0 }}>
         <div style={{ fontWeight: 800, fontSize: 20, marginBottom: 14, color: "#111827" }}>Secure Checkout</div>
 
         {!user && (
@@ -243,7 +243,7 @@ export default function CheckoutPage({ ctx, setAuthModal }) {
       </div>
 
       {/* Summary sidebar */}
-      <div style={{ flex: 1, minWidth: 280 }}>
+      <div className="checkout-summary" style={{ flex: 1, minWidth: 280 }}>
         <div style={{ background: "white", borderRadius: 12, padding: 18, border: "1px solid #E5E7EB", position: "sticky", top: 90 }}>
           <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 12, color: "#111827" }}>Order Summary ({items.length} items)</div>
           
@@ -279,7 +279,14 @@ export default function CheckoutPage({ ctx, setAuthModal }) {
           </div>
         </div>
       </div>
-      <style>{`@media (max-width:820px){ .checkout-grid{ grid-template-columns:1fr !important; } }`}</style>
+      <style>{`
+        @media (max-width:820px){
+          .checkout-shell { flex-direction: column !important; }
+          .checkout-main { order: 2; }
+          .checkout-summary { order: 1; width: 100% !important; min-width: 0 !important; }
+          .checkout-grid{ grid-template-columns:1fr !important; }
+        }
+      `}</style>
     </div>
   );
 }

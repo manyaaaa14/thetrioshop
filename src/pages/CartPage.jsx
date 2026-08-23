@@ -18,9 +18,10 @@ export default function CartPage({ ctx }) {
   }
 
   return (
-    <div className="fade-in" style={{ maxWidth: 1000, margin: "16px auto", padding: "0 14px", display: "flex", gap: 20 }}>
-      <div style={{ flex: 2, minWidth: 0 }}>
-        <div style={{ fontWeight: 800, fontSize: 19, marginBottom: 12 }}>My Cart ({items.length})</div>
+    <div className="fade-in" style={{ maxWidth: 1000, margin: "16px auto", padding: "0 14px" }}>
+      <div style={{ fontWeight: 800, fontSize: 19, marginBottom: 12 }}>My Cart ({items.length})</div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {items.map((i) => (
             <div key={i.product.id} style={{ background: "white", borderRadius: 12, padding: 12, display: "flex", gap: 12, border: "1px solid #eee" }}>
@@ -44,10 +45,8 @@ export default function CartPage({ ctx }) {
             </div>
           ))}
         </div>
-        <a onClick={() => goto("shop")} style={{ display: "inline-block", marginTop: 14, fontSize: 13, color: "#7C3AED", fontWeight: 600, cursor: "pointer" }}>+ Continue Shopping</a>
-      </div>
-      <div style={{ flex: 1, minWidth: 260 }}>
-        <div style={{ background: "white", borderRadius: 12, padding: 16, border: "1px solid #eee", position: "sticky", top: 100 }}>
+
+        <div style={{ background: "white", borderRadius: 12, padding: 16, border: "1px solid #eee" }}>
           <div style={{ fontWeight: 700, fontSize: 14.5, marginBottom: 12 }}>Price Details</div>
           <Row label={`Subtotal (${items.length} items)`} value={money(subtotal)} />
           <Row label="Discount" value={`- ${money(savings)}`} green />
@@ -57,6 +56,8 @@ export default function CartPage({ ctx }) {
           {savings > 0 && <div style={{ fontSize: 12, color: "#16A34A", fontWeight: 700, marginTop: 6 }}>You will save {money(savings)} on this order</div>}
           <button onClick={() => goto("checkout")} style={{ marginTop: 14, width: "100%", padding: "12px 0", borderRadius: 10, border: "none", background: "linear-gradient(90deg,#7C3AED,#DB2777)", color: "white", fontWeight: 700, fontSize: 14 }}>Proceed to Checkout</button>
         </div>
+
+        <a onClick={() => goto("shop")} style={{ display: "inline-block", fontSize: 13, color: "#7C3AED", fontWeight: 600, cursor: "pointer" }}>+ Continue Shopping</a>
       </div>
     </div>
   );

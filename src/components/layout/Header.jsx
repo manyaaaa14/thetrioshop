@@ -27,9 +27,9 @@ export default function Header({ ctx, menuOpen, setMenuOpen, setAuthModal, cartC
             <Menu size={22} />
           </div>
           
-          <a onClick={() => goto("home")} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", flexShrink: 0 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg,#7C3AED,#EC4899,#F97316)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 800, fontSize: 15, boxShadow: "0 2px 8px rgba(124,58,237,.3)" }}>T3</div>
-            <div style={{ fontWeight: 800, fontSize: 19, letterSpacing: -0.5, color: "#111827" }}>THE TRIO SHOP</div>
+          <a onClick={() => goto("home")} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", flexShrink: 0, minWidth: 0 }} className="brand-wrap">
+            <div className="brand-badge" style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg,#7C3AED,#EC4899,#F97316)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 800, fontSize: 15, boxShadow: "0 2px 8px rgba(124,58,237,.3)", flexShrink: 0 }}>T3</div>
+            <div className="brand-text" style={{ fontWeight: 800, fontSize: 19, letterSpacing: -0.5, color: "#111827", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>THE TRIO SHOP</div>
           </a>
 
           <div style={{ flex: 1, position: "relative", maxWidth: 600 }} className="desktop-search">
@@ -134,9 +134,12 @@ export default function Header({ ctx, menuOpen, setMenuOpen, setAuthModal, cartC
       </div>
       <style>{`
         .mobile-toggle{ display:none; }
+        .brand-wrap { min-width: 0; }
+        .brand-text { font-size: clamp(13px, 2vw, 19px); }
         @media (max-width: 820px){
           .desktop-search{ display:none; }
           .mobile-toggle{ display:flex; }
+          .brand-wrap { max-width: calc(100vw - 120px); }
         }
       `}</style>
     </header>
