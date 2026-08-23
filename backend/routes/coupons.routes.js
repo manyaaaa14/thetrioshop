@@ -1,0 +1,103 @@
+import express from "express";
+import { db } from "../db/db.js";
+import { protectAdmin } from "../middleware/auth.js";
+
+const router = express.Router();
+
+// POST /api/coupons/validate - Check coupon validity & calculate discount
+router.post("/validate", (req, res) => {
+  try {
+    const { code, subtotal } = req.body;
+    if (!code) {
+      return res.status(400).json({ success: false, message: "Please provide a coupon code" });
+    }
+
+    const coupon = db.findOne("coupons", (c) => c.code.toUpperCase() === code.toUpperCase().trim());
+    if (!coupon || !coupon.active) {
+      return res.status(404).json({ success: false, message: "Invalid or inactive coupon code" });
+    }
+
+    const amount = Number(subtotal) || 0;
+    if (amount < (coupon.minOrder || 0)) {
+      return res.status(400).json({
+        success: false,
+        message: `Add items worth ₹${coupon.minOrder - amount} more to use code "${coupon.code}" (Min order ₹${coupon.minOrder})`,
+      });
+    }
+
+    let discount = 0;
+    if (coupon.type === "flat") {
+      discount = Math.min(coupon.value, amount);
+    } else if (coupon.type === "pct") {
+      discount = Math.round((amount * coupon.value) / 100);
+      if (coupon.maxDiscount) discount = Math.min(discount, coupon.maxDiscount);
+    }
+
+    res.json({
+      success: true,
+      message: `Coupon "${coupon.code}" applied! You save ₹${discount}`,
+      coupon: {
+        code: coupon.code,
+        type: coupon.type,
+        value: coupon.value,
+        discount,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// GET /api/coupons - Get all coupons (Admin)
+router.get("/", protectAdmin, (req, res) => {
+  try {
+    const coupons = db.find("coupons");
+    res.json({ success: true, coupons });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// POST /api/coupons - Create coupon (Admin)
+router.post("/", protectAdmin, (req, res) => {
+  try {
+    const { code, type, value, minOrder, maxDiscount } = req.body;
+    if (!code || !type || value === undefined) {
+      return res.status(400).json({ success: false, message: "Code, type, and value are required." });
+    }
+
+    const upperCode = code.toUpperCase().trim();
+    const existing = db.findOne("coupons", (c) => c.code === upperCode);
+    if (existing) {
+      return res.status(400).json({ success: false, message: `Coupon ${upperCode} already exists.` });
+    }
+
+    const newCoupon = db.insert("coupons", {
+      code: upperCode,
+      type, // "flat" | "pct"
+      value: Number(value),
+      minOrder: Number(minOrder) || 0,
+      maxDiscount: maxDiscount ? Number(maxDiscount) : null,
+      active: true,
+    });
+
+    res.status(201).json({ success: true, coupon: newCoupon });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// DELETE /api/coupons/:id - Delete coupon (Admin)
+router.delete("/:id", protectAdmin, (req, res) => {
+  try {
+    const removed = db.remove("coupons", req.params.id);
+    if (!removed) {
+      return res.status(404).json({ success: false, message: "Coupon not found" });
+    }
+    res.json({ success: true, message: "Coupon deleted" });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+export default router;
