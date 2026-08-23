@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { db } from "./db.js";
-import { seedDatabase } from "./db/seed.js";
+import { seedDatabase } from "./seed.js";
 
 // Routes
 import authRoutes from "./routes/auth.routes.js";
