@@ -48,21 +48,6 @@
       "createdAt": "2026-08-20T12:38:11.579Z"
     },
     {
-      "id": "usr_demo",
-      "name": "Aarav Sharma",
-      "email": "user@trioshop.in",
-      "password": "$2a$10$yib0.69kauKh.yA5VAyyAurJccyfUDfQWRZCDFBUgs0n57cKS0tIW",
-      "role": "user",
-      "phone": "9876543210",
-      "address": {
-        "address": "Flat 402, Lotus Towers, MG Road",
-        "city": "Bengaluru",
-        "state": "Karnataka",
-        "pincode": "560001"
-      },
-      "createdAt": "2026-08-20T12:38:11.580Z"
-    },
-    {
       "id": "usr_priya",
       "name": "Priya Patel",
       "email": "priya@gmail.com",

@@ -26,21 +26,6 @@ export async function seedDatabase(force = false) {
       createdAt: new Date().toISOString(),
     },
     {
-      id: "usr_demo",
-      name: "Aarav Sharma",
-      email: "user@trioshop.in",
-      password: userPasswordHash,
-      role: "user",
-      phone: "9876543210",
-      address: {
-        address: "Flat 402, Lotus Towers, MG Road",
-        city: "Bengaluru",
-        state: "Karnataka",
-        pincode: "560001",
-      },
-      createdAt: new Date().toISOString(),
-    },
-    {
       id: "usr_priya",
       name: "Priya Patel",
       email: "priya@gmail.com",
