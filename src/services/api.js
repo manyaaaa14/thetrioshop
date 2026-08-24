@@ -1,4 +1,4 @@
-// API Service Layer for THE TRIO SHOP
+﻿// API Service Layer for THE TRIO SHOP
 // Manages HTTP requests to the backend with automated JWT token handling
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
@@ -313,3 +313,4 @@ export const api = {
     },
   },
 };
+
