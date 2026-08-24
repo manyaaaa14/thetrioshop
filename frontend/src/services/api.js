@@ -1,7 +1,7 @@
 // API Service Layer for THE TRIO SHOP
 // Manages HTTP requests to the backend with automated JWT token handling
 
-const API_BASE = "/api";
+const API_BASE = "https://thetrioshopp.onrender.com/api"; // Update this to your backend URL
 
 function getToken() {
   return localStorage.getItem("trio_jwt_token") || null;
