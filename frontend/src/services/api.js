@@ -1,7 +1,7 @@
-// API Service Layer for THE TRIO SHOP
+﻿// API Service Layer for THE TRIO SHOP
 // Manages HTTP requests to the backend with automated JWT token handling
 
-const API_BASE = "https://thetrioshopp.onrender.com/api"; // Update this to your backend URL
+const API_BASE = "/api"; // Use proxied dev API base or relative path in production
 
 function getToken() {
   return localStorage.getItem("trio_jwt_token") || null;
@@ -28,9 +28,9 @@ async function request(endpoint, options = {}) {
     headers,
   };
 
-
   try {
-    const res = await fetch(`${API_BASE}${endpoint}`, config);
+    const target = `${API_BASE}${endpoint}`;
+    const res = await fetch(target, config);
     const data = await res.json().catch(() => ({}));
 
     if (!res.ok) {
@@ -43,13 +43,14 @@ async function request(endpoint, options = {}) {
 
     return data;
   } catch (err) {
-    console.error(`API Error on [${options.method || "GET"} ${endpoint}]:`, err.message);
+    if (err.status !== 401 && err.status !== 403) {
+      console.error(`API Error on [${options.method || "GET"} ${endpoint}]:`, err.message);
+    }
     throw err;
   }
 }
 
 export const api = {
-  // Auth endpoints
   auth: {
     async register({ name, email, password, phone }) {
       const data = await request("/auth/register", {
@@ -94,7 +95,6 @@ export const api = {
     },
   },
 
-  // Products endpoints
   products: {
     async getAll(params = {}) {
       const query = new URLSearchParams();
@@ -142,7 +142,6 @@ export const api = {
     },
   },
 
-  // Categories endpoints
   categories: {
     async getAll() {
       return await request("/categories");
@@ -162,7 +161,6 @@ export const api = {
     },
   },
 
-  // Orders endpoints
   orders: {
     async create(orderDraft) {
       return await request("/orders", {
@@ -197,7 +195,6 @@ export const api = {
     },
   },
 
-  // Coupons endpoints
   coupons: {
     async validate(code, subtotal) {
       return await request("/coupons/validate", {
@@ -224,7 +221,6 @@ export const api = {
     },
   },
 
-  // Reviews endpoints
   reviews: {
     async getByProduct(productId) {
       return await request(`/reviews/product/${productId}`);
@@ -248,11 +244,27 @@ export const api = {
     },
   },
 
-  // Cart & Wishlist sync endpoints
+  payments: {
+    async createOrder(order) {
+      return await request("/payments/create-order", {
+        method: "POST",
+        body: JSON.stringify(order),
+      });
+    },
+
+    async verify(payload) {
+      return await request("/payments/verify", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+    },
+  },
+
   cart: {
     async get() {
       return await request("/cart");
     },
+
     async sync(cart) {
       return await request("/cart/sync", {
         method: "POST",
@@ -265,6 +277,7 @@ export const api = {
     async get() {
       return await request("/wishlist");
     },
+
     async sync(wishlist) {
       return await request("/wishlist/sync", {
         method: "POST",
@@ -273,7 +286,6 @@ export const api = {
     },
   },
 
-  // Admin Analytics & Banner endpoints
   admin: {
     async getStats() {
       return await request("/admin/stats");
