@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 import path from "path";
 import { fileURLToPath, pathToFileURL } from "url";
 
@@ -96,4 +96,5 @@ app.listen(PORT, () => {
   console.log(`📡  Health check: http://localhost:${PORT}/api/health`);
   console.log(`===========================================`);
 });
->>>>>>> origin/main
+
+
