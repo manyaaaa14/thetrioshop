@@ -28,6 +28,7 @@ async function request(endpoint, options = {}) {
     headers,
   };
 
+
   try {
     const res = await fetch(`${API_BASE}${endpoint}`, config);
     const data = await res.json().catch(() => ({}));
