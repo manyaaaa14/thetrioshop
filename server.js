@@ -1,8 +1,8 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import { db } from "./db/db.js";
-import { seedDatabase } from "./db/seed.js";
+import { db } from "./src/db/db.js";
+import { seedDatabase } from "./src/db/seed.js";
 
 // Routes
 import authRoutes from "./routes/auth.routes.js";
