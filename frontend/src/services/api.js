@@ -1,11 +1,9 @@
 ﻿// API Service Layer for THE TRIO SHOP
 // Robust backend base URL and Authorization header handling
 
-const API_BASE = (import.meta && import.meta.env && import.meta.env.VITE_API_BASE_URL)
-  ? import.meta.env.VITE_API_BASE_URL.replace(/\/$/, "")
-  : (typeof window !== 'undefined' && window.location.hostname === 'localhost')
-    ? '/api'
-    : 'https://thetrioshopp.onrender.com';
+const API_BASE =
+  import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ||
+  "https://thetrioshopp.onrender.com/api";
 
 function getToken() {
   try { return localStorage.getItem('trio_jwt_token') || null; } catch (e) { return null; }
@@ -18,7 +16,8 @@ export function setToken(token) {
   } catch (e) { /* ignore */ }
 }
 
-async function request(endpoint, options = {}) {
+async function request(
+  endpoint, options = {}) {
   const token = getToken();
   const headers = {
     'Content-Type': 'application/json',
