@@ -74,7 +74,7 @@ app.use(errorHandler);
 app.listen(PORT, () => {
   console.log(`===========================================`);
   console.log(`🛍️  THE TRIO SHOP Backend API`);
-  console.log(`🌐  Server running on http://localhost:${PORT}`);
-  console.log(`📡  Health check: http://thetrioshop.onrender.com/api/health`);
+  console.log(`🌐  Server running on https://thetrioshopp.onrender.com`);
+  console.log(`📡  Health check: https://thetrioshopp.onrender.com/api/health`);
   console.log(`===========================================`);
 });
