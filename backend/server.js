@@ -45,8 +45,8 @@ app.use((req, res, next) => {
   next();
 });
 
-// Health check
-app.get("/api/health", (req, res) => {
+// Health check (supports both /api/health and /health)
+app.get(["/api/health", "/health"], (req, res) => {
   res.json({
     status: "ok",
     message: "THE TRIO SHOP API Server is running smoothly 🚀",
@@ -56,17 +56,24 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// Mount Routes
-app.use("/api/auth", authRoutes);
-app.use("/api/products", productRoutes);
-app.use("/api/categories", categoryRoutes);
-app.use("/api/orders", orderRoutes);
-app.use("/api/coupons", couponRoutes);
-app.use("/api/reviews", reviewRoutes);
-app.use("/api/cart", cartRoutes);
-app.use("/api/wishlist", wishlistRoutes);
-app.use("/api/payments", paymentRoutes);
-app.use("/api/admin", adminRoutes);
+// Mount Routes (accessible via /api/* and /*)
+const routeList = [
+  ["/auth", authRoutes],
+  ["/products", productRoutes],
+  ["/categories", categoryRoutes],
+  ["/orders", orderRoutes],
+  ["/coupons", couponRoutes],
+  ["/reviews", reviewRoutes],
+  ["/cart", cartRoutes],
+  ["/wishlist", wishlistRoutes],
+  ["/payments", paymentRoutes],
+  ["/admin", adminRoutes],
+];
+
+for (const [routePath, router] of routeList) {
+  app.use(`/api${routePath}`, router);
+  app.use(routePath, router);
+}
 
 // Error Handler
 app.use(errorHandler);
