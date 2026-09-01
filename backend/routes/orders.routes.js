@@ -20,11 +20,11 @@ router.post("/", optionalUser, (req, res) => {
       return res.status(400).json({ success: false, message: "Incomplete delivery address" });
     }
 
-    if (!["googlepay", "phonepe", "paytm", "upi", "prepaid", "qr", "bank", "razorpay"].includes(paymentMethod)) {
+    if (!["googlepay", "phonepe", "paytm", "bhim", "upi", "prepaid", "qr", "bank", "razorpay"].includes(paymentMethod)) {
       return res.status(400).json({ success: false, message: "Only prepaid orders are accepted. Cash on delivery is not available." });
     }
 
-    if (["googlepay", "phonepe", "paytm", "upi", "prepaid", "qr", "bank", "razorpay"].includes(paymentMethod)) {
+    if (["googlepay", "phonepe", "paytm", "bhim", "upi", "prepaid", "qr", "bank", "razorpay"].includes(paymentMethod)) {
       if (paymentMethod === "razorpay") {
         if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
           return res.status(400).json({ success: false, message: "Payment is not verified yet. Please complete Razorpay checkout first." });

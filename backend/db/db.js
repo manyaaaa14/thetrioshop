@@ -1,6 +1,13 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { connectMongoDB, isMongoConnected } from "./mongodb.js";
+import { UserModel } from "./models/User.js";
+import { ProductModel } from "./models/Product.js";
+import { OrderModel } from "./models/Order.js";
+import { CategoryModel } from "./models/Category.js";
+import { CouponModel } from "./models/Coupon.js";
+import { ReviewModel } from "./models/Review.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -20,20 +27,31 @@ const defaultState = {
   wishlists: {},  // userId -> { [productId]: true }
 };
 
-class JSONDatabase {
+const modelMap = {
+  users: UserModel,
+  products: ProductModel,
+  orders: OrderModel,
+  categories: CategoryModel,
+  coupons: CouponModel,
+  reviews: ReviewModel,
+};
+
+class UnifiedDatabase {
   constructor() {
     this.data = { ...defaultState };
     this.isLoaded = false;
+    this.isMongoActive = false;
   }
 
-  init() {
+  async init() {
+    // 1. Initialize local JSON store
     try {
       if (!fs.existsSync(DATA_DIR)) {
         fs.mkdirSync(DATA_DIR, { recursive: true });
       }
 
       if (fs.existsSync(STORE_PATH)) {
-        const raw = fs.readFileSync(STORE_PATH, "utf-8");
+        const raw = fs.readFileSync(STORE_PATH, "utf-8").replace(/^\uFEFF/, "");
         this.data = JSON.parse(raw);
       } else {
         this.data = { ...defaultState };
@@ -41,8 +59,51 @@ class JSONDatabase {
       }
       this.isLoaded = true;
     } catch (err) {
-      console.error("Failed to initialize database:", err);
+      console.error("Failed to initialize local database:", err);
       this.data = { ...defaultState };
+    }
+
+    // 2. Connect to MongoDB if URI is present
+    try {
+      const connected = await connectMongoDB();
+      if (connected) {
+        this.isMongoActive = true;
+        await this.syncToMongoDB();
+      }
+    } catch (err) {
+      console.error("MongoDB init check error:", err.message);
+    }
+  }
+
+  async syncToMongoDB() {
+    if (!isMongoConnected()) return;
+    try {
+      // Check if products collection is empty in MongoDB; if so, populate from local
+      const productCount = await ProductModel.countDocuments();
+      if (productCount === 0 && this.data.products?.length > 0) {
+        console.log("🌱 Seeding MongoDB Atlas collections with initial catalog data...");
+        if (this.data.users?.length) {
+          await UserModel.insertMany(this.data.users, { ordered: false }).catch(() => {});
+        }
+        if (this.data.products?.length) {
+          await ProductModel.insertMany(this.data.products, { ordered: false }).catch(() => {});
+        }
+        if (this.data.categories?.length) {
+          await CategoryModel.insertMany(this.data.categories, { ordered: false }).catch(() => {});
+        }
+        if (this.data.coupons?.length) {
+          await CouponModel.insertMany(this.data.coupons, { ordered: false }).catch(() => {});
+        }
+        if (this.data.reviews?.length) {
+          await ReviewModel.insertMany(this.data.reviews, { ordered: false }).catch(() => {});
+        }
+        if (this.data.orders?.length) {
+          await OrderModel.insertMany(this.data.orders, { ordered: false }).catch(() => {});
+        }
+        console.log("✅ Initial data successfully synchronized into MongoDB Atlas!");
+      }
+    } catch (err) {
+      console.warn("Notice on MongoDB initial sync:", err.message);
     }
   }
 
@@ -51,7 +112,6 @@ class JSONDatabase {
       if (!fs.existsSync(DATA_DIR)) {
         fs.mkdirSync(DATA_DIR, { recursive: true });
       }
-      // Atomic write: write to temp file then rename
       const tempPath = STORE_PATH + ".tmp";
       fs.writeFileSync(tempPath, JSON.stringify(this.data, null, 2), "utf-8");
       fs.renameSync(tempPath, STORE_PATH);
@@ -93,6 +153,14 @@ class JSONDatabase {
     };
     col.unshift(newItem);
     this.persist();
+
+    // Async write to MongoDB
+    if (isMongoConnected() && modelMap[collection]) {
+      modelMap[collection].create(newItem).catch((err) => {
+        console.error(`MongoDB insert error in ${collection}:`, err.message);
+      });
+    }
+
     return newItem;
   }
 
@@ -105,11 +173,19 @@ class JSONDatabase {
     const updated = {
       ...existing,
       ...updates,
-      id: existing.id, // preserve ID
+      id: existing.id,
       updatedAt: new Date().toISOString(),
     };
     col[index] = updated;
     this.persist();
+
+    // Async update to MongoDB
+    if (isMongoConnected() && modelMap[collection]) {
+      modelMap[collection].findOneAndUpdate({ id: String(id) }, { $set: updates }, { new: true }).catch((err) => {
+        console.error(`MongoDB update error in ${collection}:`, err.message);
+      });
+    }
+
     return updated;
   }
 
@@ -120,6 +196,14 @@ class JSONDatabase {
 
     col.splice(index, 1);
     this.persist();
+
+    // Async delete from MongoDB
+    if (isMongoConnected() && modelMap[collection]) {
+      modelMap[collection].findOneAndDelete({ id: String(id) }).catch((err) => {
+        console.error(`MongoDB remove error in ${collection}:`, err.message);
+      });
+    }
+
     return true;
   }
 
@@ -150,5 +234,5 @@ class JSONDatabase {
   }
 }
 
-export const db = new JSONDatabase();
-db.init();
+export const db = new UnifiedDatabase();
+db.init().catch((err) => console.error("Database initialization error:", err));

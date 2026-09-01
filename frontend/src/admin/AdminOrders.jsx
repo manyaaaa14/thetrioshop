@@ -84,7 +84,25 @@ export default function AdminOrders({ ctx }) {
                 </div>
                 <div style={{ textAlign: "right" }}>
                   <div style={{ fontWeight: 800, fontSize: 16, color: "#111827" }}>{money(o.total)}</div>
-                  <div style={{ fontSize: 11.5, color: "#6B7280", textTransform: "uppercase" }}>{o.payment === "cod" ? "Cash on Delivery" : "Online Prepaid"}</div>
+                  <div style={{ fontSize: 11.5, color: "#6B7280", textTransform: "uppercase", fontWeight: 600 }}>
+                    {o.payment === "razorpay" ? "💳 Razorpay" :
+                     o.payment === "googlepay" ? "📱 GPay" :
+                     o.payment === "phonepe" ? "🟣 PhonePe" :
+                     o.payment === "paytm" ? "🔷 Paytm" :
+                     o.payment === "bhim" ? "📲 BHIM UPI" :
+                     o.payment === "qr" ? "📷 UPI QR" :
+                     o.payment === "cod" ? "💵 COD" : "Prepaid"}
+                  </div>
+                  {o.paymentReference && (
+                    <div style={{ fontSize: 11, color: "#7C3AED", fontFamily: "monospace", fontWeight: 700 }}>
+                      UTR: {o.paymentReference}
+                    </div>
+                  )}
+                  {o.razorpayPaymentId && (
+                    <div style={{ fontSize: 11, color: "#7C3AED", fontFamily: "monospace", fontWeight: 700 }}>
+                      ID: {o.razorpayPaymentId}
+                    </div>
+                  )}
                 </div>
               </div>
 

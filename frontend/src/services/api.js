@@ -1,4 +1,4 @@
-﻿// API Service Layer for THE TRIO SHOP
+// API Service Layer for THE TRIO SHOP
 // Robust backend base URL and Authorization header handling
 
 const API_BASE =
@@ -48,5 +48,12 @@ export const api = {
     async me() { return await request('/auth/me'); },
     async updateProfile(updates) { return await request('/auth/profile', { method: 'PUT', body: JSON.stringify(updates) }); },
     logout() { setToken(null); },
+  },
+  // ─── PAYMENTS ────────────────────────────────────────────────────────────
+  // GET /api/payments/config  POST /api/payments/create-order  POST /api/payments/verify
+  payments: {
+    async getConfig() { return await request("/payments/config"); },
+    async createOrder(payload) { return await request("/payments/create-order", { method: "POST", body: JSON.stringify(payload) }); },
+    async verify(payload) { return await request("/payments/verify", { method: "POST", body: JSON.stringify(payload) }); },
   },
 };

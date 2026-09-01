@@ -40,8 +40,20 @@ export default function ConfirmationPage({ ctx }) {
         <Row label="Products Ordered" value={`${order.items?.length || 1} item(s)`} />
         <Row label="Total Paid" value={money(order.total)} />
         <Row label="Delivery Address" value={`${order.address?.city}, ${order.address?.state} - ${order.address?.pincode}`} />
-        <Row label="Current Status" value={order.status || "Confirmed"} green />
-        <Row label="Payment Mode" value={order.payment === "cod" ? "Cash on Delivery" : "Prepaid (Online)"} />
+        <Row 
+          label="Payment Mode" 
+          value={
+            order.payment === "razorpay" ? "Razorpay Gateway (Online)" :
+            order.payment === "googlepay" ? "Google Pay (UPI)" :
+            order.payment === "phonepe" ? "PhonePe (UPI)" :
+            order.payment === "paytm" ? "Paytm (UPI)" :
+            order.payment === "bhim" ? "BHIM / UPI" :
+            order.payment === "qr" ? "QR Code (UPI)" :
+            order.payment === "cod" ? "Cash on Delivery" : "Prepaid Online"
+          } 
+        />
+        {order.paymentReference && <Row label="UTR / Reference ID" value={order.paymentReference} />}
+        {order.razorpayPaymentId && <Row label="Razorpay Payment ID" value={order.razorpayPaymentId} />}
         <Row label="Payment Status" value={order.paymentStatus || "Paid"} green />
       </div>
 

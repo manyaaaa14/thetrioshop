@@ -1,7 +1,10 @@
+import dotenv from "dotenv";
+dotenv.config();
+
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
 import { db } from "./db/db.js";
+import { connectMongoDB } from "./db/mongodb.js";
 import { seedDatabase } from "./db/seed.js";
 
 // Routes
@@ -17,13 +20,16 @@ import paymentRoutes from "./routes/payments.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
 import { errorHandler } from "./middleware/error.js";
 
-dotenv.config();
-
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Auto-seed database if empty on startup
-seedDatabase().catch((err) => console.error("Seed check error:", err));
+// Initialize Database connections & seeding
+async function initializeServer() {
+  await connectMongoDB().catch((err) => console.error("MongoDB connect error:", err.message));
+  await seedDatabase().catch((err) => console.error("Seed check error:", err.message));
+}
+
+initializeServer();
 
 // Middleware
 app.use(cors({
@@ -44,6 +50,7 @@ app.get("/api/health", (req, res) => {
   res.json({
     status: "ok",
     message: "THE TRIO SHOP API Server is running smoothly 🚀",
+    database: process.env.MONGODB_URI ? "MongoDB Atlas" : "Local JSON Store",
     timestamp: new Date().toISOString(),
     version: "1.0.0",
   });
@@ -60,21 +67,24 @@ app.use("/api/cart", cartRoutes);
 app.use("/api/wishlist", wishlistRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/admin", adminRoutes);
-app.get("/api/health", (req, res) => {
-  res.status(200).json({
-    status: "ok",
-    message: "TRIO SHOP Backend is running"
-  });
-});
 
 // Error Handler
 app.use(errorHandler);
 
 // Start Server
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`===========================================`);
   console.log(`🛍️  THE TRIO SHOP Backend API`);
-  console.log(`🌐  Server running on https://thetrioshopp.onrender.com`);
-  console.log(`📡  Health check: https://thetrioshopp.onrender.com/api/health`);
+  console.log(`🌐  Server running on http://localhost:${PORT}`);
+  console.log(`📡  Health check: http://localhost:${PORT}/api/health`);
   console.log(`===========================================`);
+});
+
+server.on("error", (err) => {
+  if (err.code === "EADDRINUSE") {
+    console.error(`❌ Port ${PORT} is already in use by another running process.`);
+    console.log(`💡 Either stop the other process on port ${PORT} or set a different PORT in .env (e.g. PORT=5001).`);
+  } else {
+    console.error("Server error:", err);
+  }
 });

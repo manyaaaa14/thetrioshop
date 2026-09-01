@@ -251,19 +251,28 @@ export default function TrioShopApp() {
   async function placeOrder(orderDraft) {
     setLoading(true);
     try {
-      // Call backend API to validate price, coupon, decrement stock, and create order
-      const res = await api.orders.create({
-        items: orderDraft.items,
-        address: orderDraft.address,
-        payment: orderDraft.payment,
-        couponCode: orderDraft.couponCode,
-        utr: orderDraft.utr,
-        paymentVerified: orderDraft.paymentVerified,
-        upiId: orderDraft.upiId,
-      });
+      let order = orderDraft.directOrder || null;
 
-      if (res.success && res.order) {
-        const order = res.order;
+      if (!order) {
+        // Call backend API to validate price, coupon, decrement stock, and create order
+        const res = await api.orders.create({
+          items: orderDraft.items,
+          address: orderDraft.address,
+          payment: orderDraft.payment,
+          couponCode: orderDraft.couponCode,
+          utr: orderDraft.utr,
+          paymentVerified: orderDraft.paymentVerified,
+          upiId: orderDraft.upiId,
+        });
+
+        if (res.success && res.order) {
+          order = res.order;
+        } else {
+          throw new Error(res.message || "Failed to place order");
+        }
+      }
+
+      if (order) {
         setOrders((prev) => [order, ...prev]);
         setCart({});
         if (user) api.cart.sync({}).catch(() => {});

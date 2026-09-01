@@ -126,8 +126,26 @@ export default function OrderDetailPage({ ctx }) {
             Phone: {order.address.phone} {order.address.email ? `• Email: ${order.address.email}` : ""}
           </div>
           <div style={{ fontSize: 12.5, color: "#4B5563", marginTop: 8 }}>
-            <strong>Payment Method:</strong> {order.payment === "cod" ? "Cash on Delivery" : "Online Payment (UPI)"}
+            <strong>Payment Method:</strong> {
+              order.payment === "razorpay" ? "Razorpay Gateway (Cards/UPI/NetBanking)" :
+              order.payment === "googlepay" ? "Google Pay (UPI)" :
+              order.payment === "phonepe" ? "PhonePe (UPI)" :
+              order.payment === "paytm" ? "Paytm (UPI)" :
+              order.payment === "bhim" ? "BHIM / UPI" :
+              order.payment === "qr" ? "QR Code (UPI)" :
+              order.payment === "cod" ? "Cash on Delivery" : "Prepaid Online"
+            }
           </div>
+          {order.paymentReference && (
+            <div style={{ fontSize: 12.5, color: "#4B5563", marginTop: 4 }}>
+              <strong>UTR / Reference ID:</strong> <span style={{ fontFamily: "monospace", fontWeight: 700 }}>{order.paymentReference}</span>
+            </div>
+          )}
+          {order.razorpayPaymentId && (
+            <div style={{ fontSize: 12.5, color: "#4B5563", marginTop: 4 }}>
+              <strong>Razorpay ID:</strong> <span style={{ fontFamily: "monospace", fontWeight: 700 }}>{order.razorpayPaymentId}</span>
+            </div>
+          )}
           <div style={{ fontSize: 12.5, color: "#166534", marginTop: 6, fontWeight: 700 }}>
             <strong>Payment Status:</strong> {order.paymentStatus || "Paid"}
           </div>

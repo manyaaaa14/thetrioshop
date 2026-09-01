@@ -104,6 +104,15 @@ function createValidatedOrder(orderDraft) {
   };
 }
 
+router.get("/config", (req, res) => {
+  return res.json({
+    success: true,
+    razorpayKeyId: keyId || null,
+    isRazorpayConfigured: Boolean(keyId && keySecret),
+    paymentUpiId: process.env.PAYMENT_UPI_ID || "9729794568@fam",
+  });
+});
+
 router.post("/create-order", async (req, res) => {
   try {
     if (!razorpay) {
@@ -116,12 +125,12 @@ router.post("/create-order", async (req, res) => {
     }
 
     const paymentOrder = await razorpay.orders.create({
-      amount: Number(amount),
+      amount: Math.round(Number(amount) * 100), // Razorpay amount in paise
       currency,
       receipt: String(receipt || `trio_${Date.now()}`),
     });
 
-    return res.json({ success: true, order: paymentOrder });
+    return res.json({ success: true, order: paymentOrder, keyId });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message || "Failed to create Razorpay order" });
   }

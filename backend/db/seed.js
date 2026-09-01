@@ -12,9 +12,8 @@ export async function seedDatabase(force = false) {
 
   // Password hashes
   const adminPasswordHash = await bcrypt.hash("tri09090", 10);
-  const userPasswordHash = await bcrypt.hash("user123", 10);
 
-  // 1. Users
+  // 1. Users — only admin seeded; real customers register via the sign-up form
   const users = [
     {
       id: "usr_admin",
@@ -25,21 +24,6 @@ export async function seedDatabase(force = false) {
       phone: "9876543200",
       createdAt: new Date().toISOString(),
     },
-    {
-      id: "usr_priya",
-      name: "Priya Patel",
-      email: "priya@gmail.com",
-      password: userPasswordHash,
-      role: "user",
-      phone: "9823456789",
-      address: {
-        address: "12/A, Navrangpura",
-        city: "Ahmedabad",
-        state: "Gujarat",
-        pincode: "380009",
-      },
-      createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
-    }
   ];
 
   // 2. Categories

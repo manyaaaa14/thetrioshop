@@ -25,7 +25,7 @@ import ProfilePage from "./pages/ProfilePage";
 import AboutPage from "./pages/AboutPage";
 import ContactPage from "./pages/ContactPage";
 
-import AdminApp from "./admin/App";
+import AdminApp from "./admin/AdminApp";
 
 /* -----------------------------------------------------------------------
    ROOT APP (Full-Stack Integrated)
