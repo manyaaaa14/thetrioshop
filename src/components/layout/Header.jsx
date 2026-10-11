@@ -3,7 +3,7 @@ import { Search, Heart, ShoppingCart, User, Menu, X } from "lucide-react";
 import { CATEGORIES } from "../../data/products";
 
 export default function Header({ ctx, menuOpen, setMenuOpen, setAuthModal, cartCount, wishlistCount }) {
-  const { goto, user, isAdmin, searchQuery, setSearchQuery, products, categories } = ctx;
+  const { goto, user, isAdmin, searchQuery, setSearchQuery, products, categories, announcement } = ctx;
   const [localQ, setLocalQ] = useState(searchQuery);
   const activeCategories = categories || CATEGORIES;
 
@@ -15,22 +15,24 @@ export default function Header({ ctx, menuOpen, setMenuOpen, setAuthModal, cartC
 
   return (
     <header style={{ position: "sticky", top: 0, zIndex: 40 }}>
-      <div style={{ background: "linear-gradient(90deg,#7C3AED,#DB2777)", color: "white", fontSize: 12, padding: "6px 14px", overflow: "hidden", whiteSpace: "nowrap" }}>
-        <div className="ticker" style={{ display: "inline-block" }}>
-          ✨ THE TRIO SHOP SALE — Up to 70% OFF &nbsp;&nbsp;•&nbsp;&nbsp; 🚚 FREE delivery above ₹499 &nbsp;&nbsp;•&nbsp;&nbsp; 🎁 Use code TRIO50 for flat ₹50 OFF &nbsp;&nbsp;•&nbsp;&nbsp; ⚡ Express Shipping across India &nbsp;&nbsp;•&nbsp;&nbsp;
-          ✨ THE TRIO SHOP SALE — Up to 70% OFF &nbsp;&nbsp;•&nbsp;&nbsp; 🚚 FREE delivery above ₹499 &nbsp;&nbsp;•&nbsp;&nbsp; 🎁 Use code TRIO50 for flat ₹50 OFF &nbsp;&nbsp;•&nbsp;&nbsp; ⚡ Express Shipping across India &nbsp;&nbsp;•&nbsp;&nbsp;
+      {announcement?.enabled !== false && announcement?.message && (
+        <div className="brand-ticker" style={{ background: announcement.backgroundColor || "#245477", color: announcement.textColor || "#FFFFFF", fontSize: 12, padding: "6px 14px", overflow: "hidden", whiteSpace: "nowrap" }}>
+          <div className="ticker" style={{ display: "inline-flex", animationDuration: `${announcement.scrollDuration || 24}s` }}>
+            <span>{announcement.message}&nbsp;&nbsp;•&nbsp;&nbsp;</span>
+            <span aria-hidden="true">{announcement.message}&nbsp;&nbsp;•&nbsp;&nbsp;</span>
+          </div>
         </div>
-      </div>
+      )}
       <div style={{ background: "white", borderBottom: "1px solid #eee", boxShadow: "0 2px 6px rgba(0,0,0,.04)" }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "10px 14px", display: "flex", alignItems: "center", gap: 14 }}>
+        <div className="header-main-row" style={{ maxWidth: 1200, margin: "0 auto", padding: "10px 14px", display: "flex", alignItems: "center", gap: 14 }}>
           <div className="mobile-toggle" onClick={() => setMenuOpen(true)} style={{ border: "none", background: "none", padding: 4, cursor: "pointer" }}>
             <Menu size={22} />
           </div>
           
           <a onClick={() => goto("home")} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", flexShrink: 0, minWidth: 0 }} className="brand-wrap">
-            <div className="brand-badge" style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg,#7C3AED,#EC4899,#F97316)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 800, fontSize: 15, boxShadow: "0 2px 8px rgba(124,58,237,.3)", flexShrink: 0 }}>T3</div>
-            <div className="brand-text" style={{ fontWeight: 800, fontSize: 19, letterSpacing: -0.5, color: "#111827", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>THE TRIO SHOP</div>
+            <img src="/blora-logo.png" alt="BLORA" className="brand-logo" style={{ width: 84, height: 61, objectFit: "contain", flexShrink: 0 }} />
           </a>
+          <span className="brand-name" style={{ color: "#245477", fontSize: 18, fontWeight: 800, letterSpacing: 1 }}>BLORA</span>
 
           <div style={{ flex: 1, position: "relative", maxWidth: 600 }} className="desktop-search">
             <div style={{ display: "flex", alignItems: "center", background: "#F1F3F6", borderRadius: 8, padding: "8px 14px", gap: 8, border: "1px solid #E5E7EB" }}>
@@ -86,7 +88,7 @@ export default function Header({ ctx, menuOpen, setMenuOpen, setAuthModal, cartC
             )}
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 18, marginLeft: "auto" }}>
+          <div className="header-actions" style={{ display: "flex", alignItems: "center", gap: 18, marginLeft: "auto" }}>
             <IconBtn
               onClick={() => (user ? goto("profile") : setAuthModal("user"))}
               icon={<User size={21} />}
@@ -109,7 +111,7 @@ export default function Header({ ctx, menuOpen, setMenuOpen, setAuthModal, cartC
         </div>
 
         {/* Storefront Category Navbar */}
-        <nav style={{ maxWidth: 1200, margin: "0 auto", padding: "0 14px 10px", display: "flex", gap: 22, fontSize: 13.5, fontWeight: 600, overflowX: "auto" }} className="scrollbar-none">
+        <nav style={{ maxWidth: 1200, margin: "0 auto", padding: "0 14px 10px", display: "flex", gap: 22, fontSize: 13.5, fontWeight: 600, overflowX: "auto" }} className="scrollbar-none category-nav">
           {["home", "shop"].map((p) => (
             <a
               key={p}
@@ -135,11 +137,19 @@ export default function Header({ ctx, menuOpen, setMenuOpen, setAuthModal, cartC
       <style>{`
         .mobile-toggle{ display:none; }
         .brand-wrap { min-width: 0; }
-        .brand-text { font-size: clamp(13px, 2vw, 19px); }
         @media (max-width: 820px){
           .desktop-search{ display:none; }
           .mobile-toggle{ display:flex; }
           .brand-wrap { max-width: calc(100vw - 120px); }
+          .category-nav{ display:none !important; }
+          .header-main-row{ gap: 10px !important; }
+          .brand-name { flex: 1; text-align: center; }
+          .header-actions{ gap: 12px !important; margin-left: 0 !important; }
+          .header-actions .icon-label{ display:none; }
+        }
+        @media (max-width: 380px){
+          .header-actions{ gap: 8px !important; }
+          .header-actions svg{ width: 19px; height: 19px; }
         }
       `}</style>
     </header>

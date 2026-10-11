@@ -12,7 +12,7 @@ export default function MobileMenu({ ctx, setMenuOpen, setAuthModal }) {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <div style={{ width: 28, height: 28, borderRadius: 8, background: "linear-gradient(135deg,#7C3AED,#EC4899)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 800, fontSize: 13 }}>T3</div>
-            <div style={{ fontWeight: 800, fontSize: 17, color: "#111827" }}>THE TRIO SHOP</div>
+            <div style={{ fontWeight: 800, fontSize: 17, color: "#111827" }}>BLORA</div>
           </div>
           <button onClick={() => setMenuOpen(false)} style={{ border: "none", background: "#F3F4F6", borderRadius: "50%", width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
             <X size={16} />
@@ -44,7 +44,7 @@ export default function MobileMenu({ ctx, setMenuOpen, setAuthModal }) {
             ["wishlist", "My Wishlist"],
             ["cart", "Shopping Cart"],
             ["orders", "Track My Orders"],
-            ["about", "About THE TRIO SHOP"],
+            ["about", "About BLORA"],
             ["contact", "Customer Support"],
           ].map(([p, l]) => (
             <a

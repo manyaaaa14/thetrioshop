@@ -1,7 +1,7 @@
 {
   "name": "the-trio-shop-backend",
   "version": "1.0.0",
-  "description": "Backend API server for THE TRIO SHOP E-Commerce platform",
+  "description": "Backend API server for the BLORA e-commerce platform",
   "main": "server.js",
   "type": "module",
   "scripts": {
@@ -15,6 +15,7 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "firebase-admin": "^14.5.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^9.9.4"
   }

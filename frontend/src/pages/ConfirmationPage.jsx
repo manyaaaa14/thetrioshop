@@ -32,7 +32,7 @@ export default function ConfirmationPage({ ctx }) {
       
       <div style={{ fontWeight: 800, fontSize: 24, color: "#111827" }}>Order Placed Successfully! 🎉</div>
       <div style={{ fontSize: 13.5, color: "#6B7280", marginTop: 4 }}>
-        Thank you for shopping with <strong>THE TRIO SHOP</strong>. We're preparing your package for dispatch!
+        Thank you for shopping with <strong>BLORA</strong>. We're preparing your package for dispatch!
       </div>
 
       <div style={{ background: "white", borderRadius: 14, border: "1px solid #E5E7EB", padding: 20, marginTop: 22, textAlign: "left", boxShadow: "0 2px 6px rgba(0,0,0,.02)" }}>

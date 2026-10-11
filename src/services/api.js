@@ -1,4 +1,4 @@
-// API Service Layer for THE TRIO SHOP
+// API Service Layer for BLORA
 // Paths verified against actual backend route definitions
 
 function getApiBase() {
@@ -9,7 +9,7 @@ function getApiBase() {
   if (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")) {
     return "/api";
   }
-  return "https://thetrioshopp.onrender.com/api";
+  return "https://bloraa.onrender.com/api";
 }
 
 const API_BASE = getApiBase();
@@ -52,6 +52,7 @@ export const api = {
   auth: {
     async register(payload) { const data = await request("/auth/register", { method: "POST", body: JSON.stringify(payload) }); if (data.token) setToken(data.token); return data; },
     async login(payload) { const data = await request("/auth/login", { method: "POST", body: JSON.stringify(payload) }); if (data.token) setToken(data.token); return data; },
+    async firebaseSession(payload) { const data = await request("/auth/firebase-session", { method: "POST", body: JSON.stringify(payload) }); if (data.token) setToken(data.token); return data; },
     async adminLogin(payload) { const data = await request("/auth/admin-login", { method: "POST", body: JSON.stringify(payload) }); if (data.token) setToken(data.token); return data; },
     async me() { return await request("/auth/me"); },
     async updateProfile(updates) { return await request("/auth/profile", { method: "PUT", body: JSON.stringify(updates) }); },
@@ -83,6 +84,15 @@ export const api = {
     async remove(id) { return await request("/categories/" + id, { method: "DELETE" }); },
   },
 
+  // ─── HOMEPAGE BANNERS ───────────────────────────────────────────────────
+  banners: {
+    async getAll() { return await request("/admin/banners"); },
+  },
+
+  announcement: {
+    async get() { return await request("/admin/announcement"); },
+  },
+
   // ─── ORDERS ──────────────────────────────────────────────────────────────
   // POST  /api/orders              GET  /api/orders/my-orders
   // GET   /api/orders/all          GET  /api/orders/:id
@@ -92,6 +102,7 @@ export const api = {
     async getAllAdmin() { return await request("/orders/all"); },
     async getById(id) { return await request("/orders/" + id); },
     async create(payload) { return await request("/orders", { method: "POST", body: JSON.stringify(payload) }); },
+    async verifyPayment(id) { return await request("/orders/" + id + "/verify-payment", { method: "PATCH" }); },
     async updateStatus(id, status, note) { return await request("/orders/" + id + "/status", { method: "PATCH", body: JSON.stringify({ status, note: note || "" }) }); },
     async cancel(id) { return await request("/orders/" + id + "/cancel", { method: "PATCH" }); },
   },
@@ -133,11 +144,11 @@ export const api = {
   },
 
   // ─── PAYMENTS ────────────────────────────────────────────────────────────
-  // GET /api/payments/config  POST /api/payments/create-order  POST /api/payments/verify
+  // GET /api/payments/config
   payments: {
     async getConfig() { return await request("/payments/config"); },
-    async createOrder(payload) { return await request("/payments/create-order", { method: "POST", body: JSON.stringify(payload) }); },
-    async verify(payload) { return await request("/payments/verify", { method: "POST", body: JSON.stringify(payload) }); },
+    async getDirectQuote(payload) { return await request("/payments/direct-quote", { method: "POST", body: JSON.stringify(payload) }); },
+    async createDirectOrder(payload) { return await request("/payments/direct-order", { method: "POST", body: JSON.stringify(payload) }); },
   },
 
   // ─── ADMIN ───────────────────────────────────────────────────────────────
@@ -145,7 +156,18 @@ export const api = {
   // GET /api/admin/banners    PUT /api/admin/banners
   admin: {
     async getDashboard() { return await request("/admin/stats"); },
-    async getBanners() { return await request("/admin/banners"); },
+    async getBanners() {
+      try {
+        return await request("/admin/banners/manage");
+      } catch (err) {
+        if (err.status !== 404) throw err;
+        return await request("/admin/banners");
+      }
+    },
+    async getAnnouncement() { return await request("/admin/announcement/manage"); },
+    async updateAnnouncement(announcement) {
+      return await request("/admin/announcement", { method: "PUT", body: JSON.stringify({ announcement }) });
+    },
     async updateBanners(banners) { return await request("/admin/banners", { method: "PUT", body: JSON.stringify({ banners }) }); },
     async getCustomers() { return await request("/admin/customers"); },
   },

@@ -1,4 +1,4 @@
-// Demo catalog data for THE TRIO SHOP.
+// Demo catalog data for BLORA.
 // Swap this file for real API calls once you connect a backend/database.
 
 export const CATEGORIES = [

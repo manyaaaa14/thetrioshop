@@ -43,7 +43,7 @@ export default function AdminDashboard({ ctx }) {
     }
   }
 
-  const totalSales = stats ? stats.totalSales : orders.filter(o => !o.cancelled).reduce((s, o) => s + (o.total || 0), 0);
+  const totalSales = stats ? stats.totalSales : orders.filter((order) => !order.cancelled && order.paymentStatus === "Paid").reduce((sum, order) => sum + (order.total || 0), 0);
   const totalOrders = stats ? stats.totalOrders : orders.length;
   const outOfStock = products.filter((p) => p.stock === 0).length;
   const lowStock = products.filter((p) => p.stock > 0 && p.stock < 10).length;

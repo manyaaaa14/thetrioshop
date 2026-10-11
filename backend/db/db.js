@@ -115,8 +115,10 @@ class UnifiedDatabase {
       const tempPath = STORE_PATH + ".tmp";
       fs.writeFileSync(tempPath, JSON.stringify(this.data, null, 2), "utf-8");
       fs.renameSync(tempPath, STORE_PATH);
+      return true;
     } catch (err) {
       console.error("Error saving database to disk:", err);
+      return false;
     }
   }
 

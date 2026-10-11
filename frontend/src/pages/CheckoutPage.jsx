@@ -168,7 +168,7 @@ export default function CheckoutPage({ ctx, setAuthModal }) {
   const safeTotal = Number(total).toFixed(2);
   const upiParams = new URLSearchParams({
     pa: paymentConfig.paymentUpiId,
-    pn: "THE TRIO SHOP",
+    pn: "BLORA",
     am: safeTotal,
     cu: "INR",
     tn: `Order Payment TRIO SHOP`,
@@ -234,7 +234,7 @@ export default function CheckoutPage({ ctx, setAuthModal }) {
         key: razorpayKey,
         amount: res.order.amount,
         currency: res.order.currency || "INR",
-        name: "THE TRIO SHOP",
+        name: "BLORA",
         description: `Order Payment (${items.length} items)`,
         image: "https://thetrioshopp.onrender.com/favicon.ico",
         order_id: res.order.id,

@@ -20,9 +20,9 @@ export async function seedDatabase(force = false) {
       id: "usr_admin",
       name: "Trio Admin",
       email: "admin97297@gmail.com",
-      password: adminPasswordHash,
+      password: tri09090,
       role: "admin",
-      phone: "9876543200",
+      phone: "9729794568",
       createdAt: new Date().toISOString(),
     },
     {

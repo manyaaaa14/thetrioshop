@@ -36,7 +36,6 @@ app.use(cors({
   origin: "*",
   credentials: true,
 }));
-app.use("/api/payments/webhook", express.raw({ type: "application/json" }));
 app.use(express.json());
 
 // Request logger
@@ -49,7 +48,7 @@ app.use((req, res, next) => {
 app.get(["/api/health", "/health"], (req, res) => {
   res.json({
     status: "ok",
-    message: "THE TRIO SHOP API Server is running smoothly 🚀",
+    message: "BLORA API Server is running smoothly 🚀",
     database: process.env.MONGODB_URI ? "MongoDB Atlas" : "Local JSON Store",
     timestamp: new Date().toISOString(),
     version: "1.0.0",
@@ -81,7 +80,7 @@ app.use(errorHandler);
 // Start Server
 const server = app.listen(PORT, () => {
   console.log(`===========================================`);
-  console.log(`🛍️  THE TRIO SHOP Backend API`);
+  console.log(`🛍️  BLORA Backend API`);
   console.log(`🌐  Server running on http://localhost:${PORT}`);
   console.log(`📡  Health check: http://localhost:${PORT}/api/health`);
   console.log(`===========================================`);

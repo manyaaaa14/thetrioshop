@@ -1,4 +1,4 @@
-// API Service Layer for THE TRIO SHOP
+// API Service Layer for BLORA
 // Robust backend base URL and Authorization header handling
 
 function getApiBase() {
@@ -9,7 +9,7 @@ function getApiBase() {
   if (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")) {
     return "/api";
   }
-  return "https://thetrioshopp.onrender.com/api";
+  return "https://bloraa.onrender.com/api";
 }
 
 const API_BASE = getApiBase();

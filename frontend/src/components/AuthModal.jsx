@@ -104,7 +104,7 @@ export default function AuthModal({ type, onClose, ctx }) {
               {type === "admin" ? "Admin Sign In" : mode === "login" ? "Sign In to Your Account" : "Create an Account"}
             </div>
             <div style={{ fontSize: 12.5, color: "#6B7280", marginTop: 2 }}>
-              {type === "admin" ? "Access store management and inventory" : mode === "login" ? "Enter your credentials to continue" : "Join THE TRIO SHOP to start shopping"}
+              {type === "admin" ? "Access store management and inventory" : mode === "login" ? "Enter your credentials to continue" : "Join BLORA to start shopping"}
             </div>
           </div>
           <button onClick={onClose} style={{ border: "none", background: "#F3F4F6", width: 32, height: 32, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#666" }}>

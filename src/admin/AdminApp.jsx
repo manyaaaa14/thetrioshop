@@ -68,7 +68,7 @@ export default function AdminApp({ ctx }) {
           {page === "inventory" && <AdminInventory ctx={ctx} />}
           {page === "coupons" && <AdminCoupons />}
           {page === "reviews" && <AdminReviews />}
-          {page === "content" && <AdminContent />}
+          {page === "content" && <AdminContent ctx={ctx} />}
         </div>
       </div>
       {sidebarOpen && <div onClick={() => setSidebarOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.4)", zIndex: 30 }} />}

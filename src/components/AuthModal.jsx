@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { X, Lock, Mail, User, Phone, ShieldCheck } from "lucide-react";
 import Input from "./common/Input";
 import { api } from "../services/api";
+import { createUserWithEmailAndPassword, sendEmailVerification, signInWithEmailAndPassword, signOut, updateProfile } from "firebase/auth";
+import { firebaseAuth, hasFirebaseConfig, isFirebaseConfigured } from "../lib/firebase";
 
 // Shared login/signup modal for customer and admin login.
 // All credentials hints are hidden for a clean production UI.
@@ -22,43 +24,68 @@ export default function AuthModal({ type, onClose, ctx }) {
       return;
     }
 
+    if (hasFirebaseConfig && !isFirebaseConfigured) {
+      setError("Firebase configuration is incomplete. Check the VITE_FIREBASE_* values in .env.local.");
+      return;
+    }
+
     setLoading(true);
     try {
-      if (mode === "signup") {
-        const res = await api.auth.register({
-          name: form.name,
-          email: form.email,
-          password: form.password,
-          phone: form.phone,
-        });
-        if (res.user) {
-          setUser(res.user);
-          setIsAdmin(false);
-          await refreshAuthSession();
-          showToast("Account created successfully! Welcome to TRIO 🎉", "check");
-          onClose();
-          goto("home");
-        }
-      } else {
-        const res = await api.auth.login({
-          email: form.email,
-          password: form.password,
-        });
-        if (res.user) {
-          setUser(res.user);
-          setIsAdmin(res.user.role === "admin");
-          await refreshAuthSession();
-          showToast(`Welcome back, ${res.user.name}! 👋`, "check");
-          onClose();
-          if (res.user.role === "admin") {
-            goto("admin-dashboard");
-          } else {
-            goto("home");
+      let res;
+      if (isFirebaseConfigured) {
+        let credential;
+        if (mode === "signup") {
+          credential = await createUserWithEmailAndPassword(firebaseAuth, form.email, form.password);
+          await updateProfile(credential.user, { displayName: form.name });
+        } else {
+          try {
+            credential = await signInWithEmailAndPassword(firebaseAuth, form.email, form.password);
+          } catch (firebaseError) {
+            if (!["auth/user-not-found", "auth/invalid-credential"].includes(firebaseError.code)) throw firebaseError;
+            res = await api.auth.login({ email: form.email, password: form.password });
           }
         }
+
+        if (credential) {
+          res = await api.auth.firebaseSession({
+            idToken: await credential.user.getIdToken(),
+            name: mode === "signup" ? form.name : credential.user.displayName,
+            phone: form.phone,
+          });
+        }
+      } else {
+        res = mode === "signup"
+          ? await api.auth.register({
+            name: form.name,
+            email: form.email,
+            password: form.password,
+            phone: form.phone,
+          })
+          : await api.auth.login({ email: form.email, password: form.password });
+      }
+
+      if (res?.user) {
+        setUser(res.user);
+        setIsAdmin(res.user.role === "admin");
+        await refreshAuthSession();
+        showToast(mode === "signup"
+          ? "Account created successfully! Welcome to TRIO 🎉"
+          : `Welcome back, ${res.user.name}! 👋`, "check");
+        onClose();
+        goto(res.user.role === "admin" ? "admin-dashboard" : "home");
       }
     } catch (err) {
-      setError(err.message || "Authentication failed. Please check your credentials.");
+      if (err.status === 403 && err.message.startsWith("Verify your email") && firebaseAuth?.currentUser) {
+        try {
+          await sendEmailVerification(firebaseAuth.currentUser);
+          await signOut(firebaseAuth);
+          setError("We sent a verification link to your email. Verify it, then sign in to link your existing account.");
+        } catch (verificationError) {
+          setError(verificationError.message || "Could not send the verification email.");
+        }
+      } else {
+        setError(err.message || "Authentication failed. Please check your credentials.");
+      }
     } finally {
       setLoading(false);
     }
@@ -104,7 +131,7 @@ export default function AuthModal({ type, onClose, ctx }) {
               {type === "admin" ? "Admin Sign In" : mode === "login" ? "Sign In to Your Account" : "Create an Account"}
             </div>
             <div style={{ fontSize: 12.5, color: "#6B7280", marginTop: 2 }}>
-              {type === "admin" ? "Access store management and inventory" : mode === "login" ? "Enter your credentials to continue" : "Join THE TRIO SHOP to start shopping"}
+              {type === "admin" ? "Access store management and inventory" : mode === "login" ? "Enter your credentials to continue" : "Join BLORA to start shopping"}
             </div>
           </div>
           <button onClick={onClose} style={{ border: "none", background: "#F3F4F6", width: 32, height: 32, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#666" }}>

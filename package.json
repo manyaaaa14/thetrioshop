@@ -1,5 +1,5 @@
 {
-  "name": "the-trio-shop",
+  "name": "blora",
   "private": true,
   "version": "1.0.0",
   "type": "module",
@@ -10,18 +10,21 @@
     "server": "node backend/server.js",
     "build": "vite build",
     "preview": "vite preview",
-    "seed": "node backend/db/seed.js"
+    "seed": "node backend/db/seed.js",
+    "start": "node server.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "canvas-confetti": "^1.9.3",
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
-    "express": "^4.19.2",
+    "cors": "^2.8.6",
+    "dotenv": "^16.6.1",
+    "express": "^4.22.3",
+    "firebase": "^13.0.0",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.383.0",
-    "mongoose": "^9.9.4",
-    "razorpay": "^2.9.8",
+    "mongodb": "^7.7.0",
+    "mongoose": "^9.11.1",
+    "qrcode": "^1.5.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
@@ -32,5 +35,18 @@
     "postcss": "^8.4.38",
     "tailwindcss": "^3.4.4",
     "vite": "^5.3.1"
-  }
+  },
+  "description": "A complete, modern Meesho / Flipkart / Amazon–style full-stack e‑commerce platform and admin management suite, built with **React + Vite + Tailwind CSS** on the frontend and **Node.js + Express + Persistent Database** on the backend with JWT authentication.",
+  "main": "auth.routes.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/manyaaaa14/thetrioshop.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/manyaaaa14/thetrioshop/issues"
+  },
+  "homepage": "https://github.com/manyaaaa14/thetrioshop#readme"
 }

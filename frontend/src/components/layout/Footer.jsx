@@ -8,7 +8,7 @@ export default function Footer({ goto, setAuthModal }) {
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
             <div style={{ width: 28, height: 28, borderRadius: 8, background: "linear-gradient(135deg,#7C3AED,#EC4899)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 800, fontSize: 13 }}>T3</div>
-            <div style={{ color: "white", fontWeight: 800, fontSize: 17 }}>THE TRIO SHOP</div>
+            <div style={{ color: "white", fontWeight: 800, fontSize: 17 }}>BLORA</div>
           </div>
           <div style={{ fontSize: 13, lineHeight: 1.6, color: "#9CA3AF" }}>
             Trending & affordable jewellery, bags, stickers, accessories, and thoughtful gifts curated with love across India.
@@ -37,7 +37,7 @@ export default function Footer({ goto, setAuthModal }) {
             ["Track My Orders", "orders"],
             ["My Account & Profile", "profile"],
             ["Wishlist", "wishlist"],
-            ["About THE TRIO SHOP", "about"],
+            ["About BLORA", "about"],
             ["Contact & Support", "contact"],
           ]}
           goto={goto}
@@ -62,7 +62,7 @@ export default function Footer({ goto, setAuthModal }) {
       </div>
 
       <div style={{ textAlign: "center", fontSize: 12, color: "#6B7280", marginTop: 32, borderTop: "1px solid #1F2937", paddingTop: 20 }}>
-        © 2026 THE TRIO SHOP. Built with React, Tailwind & Express. All rights reserved.
+        © 2026 BLORA. All rights reserved.
       </div>
     </footer>
   );

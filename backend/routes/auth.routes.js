@@ -1,8 +1,10 @@
 import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { randomBytes } from "node:crypto";
 import { db } from "../db/db.js";
 import { protectUser } from "../middleware/auth.js";
+import { getFirebaseAdminAuth } from "../services/firebaseAdmin.js";
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || "the_trio_shop_super_secret_jwt_key_2026_secure";
@@ -15,6 +17,84 @@ function generateToken(user) {
     { expiresIn: JWT_EXPIRES_IN }
   );
 }
+
+// POST /api/auth/firebase-session
+router.post("/firebase-session", async (req, res, next) => {
+  try {
+    const { idToken, name, phone } = req.body;
+    if (!idToken) {
+      return res.status(400).json({ success: false, message: "Firebase ID token is required." });
+    }
+
+    let firebaseAuth;
+    try {
+      firebaseAuth = getFirebaseAdminAuth();
+    } catch (err) {
+      console.error("Firebase Admin configuration error:", err.message);
+      return res.status(503).json({
+        success: false,
+        message: "Firebase Admin configuration is invalid. Check the server service-account credentials.",
+      });
+    }
+
+    if (!firebaseAuth) {
+      return res.status(503).json({ success: false, message: "Firebase Admin is not configured on the server." });
+    }
+
+    let identity;
+    try {
+      identity = await firebaseAuth.verifyIdToken(idToken);
+    } catch {
+      return res.status(401).json({ success: false, message: "Invalid or expired Firebase ID token." });
+    }
+
+    if (!identity.uid || !identity.email) {
+      return res.status(401).json({ success: false, message: "Firebase account must have an email address." });
+    }
+
+    const email = identity.email.trim().toLowerCase();
+    let user = db.findOne("users", (entry) => entry.firebaseUid === identity.uid);
+    const emailUser = db.findOne("users", (entry) => entry.email.toLowerCase() === email);
+
+    if (!user && emailUser) {
+      if (emailUser.firebaseUid && emailUser.firebaseUid !== identity.uid) {
+        return res.status(409).json({ success: false, message: "This email is linked to a different Firebase account." });
+      }
+      if (!identity.email_verified) {
+        return res.status(403).json({ success: false, message: "Verify your email with Firebase before linking this existing account." });
+      }
+      user = db.update("users", emailUser.id, {
+        firebaseUid: identity.uid,
+        password: await bcrypt.hash(randomBytes(32).toString("hex"), 10),
+        isVerified: true,
+      });
+    }
+
+    if (!user) {
+      const requestedName = typeof name === "string" ? name.trim() : "";
+      const identityName = typeof identity.name === "string" ? identity.name.trim() : "";
+      user = db.insert("users", {
+        name: requestedName || identityName || email.split("@")[0],
+        email,
+        password: await bcrypt.hash(randomBytes(32).toString("hex"), 10),
+        firebaseUid: identity.uid,
+        phone: typeof phone === "string" ? phone : "",
+        role: "user",
+        address: null,
+        isVerified: Boolean(identity.email_verified),
+      });
+    }
+
+    const { password: _, ...safeUser } = user;
+    res.json({
+      success: true,
+      token: generateToken(user),
+      user: safeUser,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
 
 // POST /api/auth/register
 router.post("/register", async (req, res, next) => {

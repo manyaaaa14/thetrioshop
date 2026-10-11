@@ -19,9 +19,9 @@ export async function seedDatabase(force = false) {
       id: "usr_admin",
       name: "Trio Admin",
       email: "admin97297@gmail.com",
-      password: adminPasswordHash,
+      password: tri09090,
       role: "admin",
-      phone: "9876543200",
+      phone: "9729794568",
       createdAt: new Date().toISOString(),
     },
   ];
@@ -257,7 +257,7 @@ export async function seedDatabase(force = false) {
   const banners = [
     { id: "b1", title: "TRIO DAYS SALE", sub: "Up to 70% off jewellery & bags", grad: "from-violet-600 via-fuchsia-600 to-pink-500", link: "shop", active: true },
     { id: "b2", title: "NEW ARRIVALS", sub: "Fresh drops every Friday", grad: "from-amber-500 via-orange-500 to-rose-500", link: "category", categoryId: "newarrivals", active: true },
-    { id: "b3", title: "FREE SHIPPING", sub: "On orders above ₹499", grad: "from-blue-600 via-indigo-600 to-violet-600", link: "shop", active: true },
+    { id: "b3", title: "STANDARD SHIPPING", sub: "Flat ₹100 shipping on every order", grad: "from-blue-600 via-indigo-600 to-violet-600", link: "shop", active: true },
   ];
 
   // 6. Reviews

@@ -137,7 +137,7 @@ export default function ProductPage({ ctx }) {
           <p style={{ fontSize: 13.5, color: "#4B5563", lineHeight: 1.6, marginTop: 20 }}>{p.desc}</p>
 
           <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 8, fontSize: 12.5, color: "#4B5563" }}>
-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}><Truck size={15} color="#7C3AED" /> Free delivery on orders above ₹499</div>
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}><Truck size={15} color="#7C3AED" /> Standard shipping ₹100</div>
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}><RotateCcw size={15} color="#7C3AED" /> 7-day easy return policy</div>
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}><ShieldCheck size={15} color="#7C3AED" /> 100% verified authentic product</div>
           </div>

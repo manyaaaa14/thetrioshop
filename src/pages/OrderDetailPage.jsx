@@ -112,9 +112,13 @@ export default function OrderDetailPage({ ctx }) {
         <div style={{ marginTop: 18, borderTop: "1px dashed #E5E7EB", paddingTop: 12 }}>
           <Row label="Subtotal" value={money(order.subtotal)} />
           {order.discount > 0 && <Row label={`Discount ${order.appliedCoupon ? `(${order.appliedCoupon})` : ""}`} value={`- ${money(order.discount)}`} green />}
-          <Row label="Shipping / Delivery" value={order.delivery === 0 ? "FREE" : money(order.delivery)} green={order.delivery === 0} />
+          <Row
+            label={order.shippingMethod === "express" ? "Express Shipping" : "Standard Shipping"}
+            value={order.delivery === 0 ? "FREE" : money(order.delivery)}
+            green={order.delivery === 0}
+          />
           <div style={{ borderTop: "1px solid #F3F4F6", margin: "8px 0" }} />
-          <Row label="Total Amount Paid" value={money(order.total)} bold />
+          <Row label={order.paymentStatus === "Paid" ? "Total Amount Paid" : "Order Total"} value={money(order.total)} bold />
         </div>
 
         {/* Delivery Details */}
@@ -127,7 +131,7 @@ export default function OrderDetailPage({ ctx }) {
           </div>
           <div style={{ fontSize: 12.5, color: "#4B5563", marginTop: 8 }}>
             <strong>Payment Method:</strong> {
-              order.payment === "razorpay" ? "Razorpay Gateway (Cards/UPI/NetBanking)" :
+              order.payment === "upi-direct" ? "Direct UPI QR (manual verification)" :
               order.payment === "googlepay" ? "Google Pay (UPI)" :
               order.payment === "phonepe" ? "PhonePe (UPI)" :
               order.payment === "paytm" ? "Paytm (UPI)" :
@@ -138,16 +142,11 @@ export default function OrderDetailPage({ ctx }) {
           </div>
           {order.paymentReference && (
             <div style={{ fontSize: 12.5, color: "#4B5563", marginTop: 4 }}>
-              <strong>UTR / Reference ID:</strong> <span style={{ fontFamily: "monospace", fontWeight: 700 }}>{order.paymentReference}</span>
-            </div>
-          )}
-          {order.razorpayPaymentId && (
-            <div style={{ fontSize: 12.5, color: "#4B5563", marginTop: 4 }}>
-              <strong>Razorpay ID:</strong> <span style={{ fontFamily: "monospace", fontWeight: 700 }}>{order.razorpayPaymentId}</span>
+              <strong>Payment Reference:</strong> <span style={{ fontFamily: "monospace", fontWeight: 700 }}>{order.paymentReference}</span>
             </div>
           )}
           <div style={{ fontSize: 12.5, color: "#166534", marginTop: 6, fontWeight: 700 }}>
-            <strong>Payment Status:</strong> {order.paymentStatus || "Paid"}
+            <strong>Payment Status:</strong> {order.paymentStatus || "Pending"}
           </div>
         </div>
 

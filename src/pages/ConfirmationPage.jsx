@@ -10,6 +10,7 @@ export default function ConfirmationPage({ ctx }) {
   const order = orders.find((o) => o.id === view.orderId) || view.order;
 
   useEffect(() => {
+    if (order?.paymentStatus !== "Paid") return;
     try {
       confetti({
         particleCount: 80,
@@ -20,7 +21,7 @@ export default function ConfirmationPage({ ctx }) {
     } catch (e) {
       // ignore
     }
-  }, []);
+  }, [order?.paymentStatus]);
 
   if (!order) return <EmptyState icon={<Package size={38} />} title="Order not found" sub="Check your order ID in My Orders" />;
 
@@ -30,20 +31,28 @@ export default function ConfirmationPage({ ctx }) {
         <Check size={42} color="#16A34A" strokeWidth={3} />
       </div>
       
-      <div style={{ fontWeight: 800, fontSize: 24, color: "#111827" }}>Order Placed Successfully! 🎉</div>
+      <div style={{ fontWeight: 800, fontSize: 24, color: "#111827" }}>
+        {order.paymentStatus === "Pending" ? "Order submitted — payment verification pending" : "Order Placed Successfully! 🎉"}
+      </div>
       <div style={{ fontSize: 13.5, color: "#6B7280", marginTop: 4 }}>
-        Thank you for shopping with <strong>THE TRIO SHOP</strong>. We're preparing your package for dispatch!
+        {order.paymentStatus === "Pending"
+          ? "Your direct UPI transaction reference was submitted. We will confirm the order after an administrator verifies the payment."
+          : <>Thank you for shopping with <strong>BLORA</strong>. We're preparing your package for dispatch!</>}
       </div>
 
       <div style={{ background: "white", borderRadius: 14, border: "1px solid #E5E7EB", padding: 20, marginTop: 22, textAlign: "left", boxShadow: "0 2px 6px rgba(0,0,0,.02)" }}>
         <Row label="Order Reference" value={`#${order.id}`} bold />
         <Row label="Products Ordered" value={`${order.items?.length || 1} item(s)`} />
-        <Row label="Total Paid" value={money(order.total)} />
+        <Row label={order.paymentStatus === "Paid" ? "Total Paid" : "Order Total"} value={money(order.total)} />
+        <Row
+          label="Shipping Method"
+          value={order.shippingMethod === "express" ? "Express Shipping" : "Standard Shipping"}
+        />
         <Row label="Delivery Address" value={`${order.address?.city}, ${order.address?.state} - ${order.address?.pincode}`} />
         <Row 
           label="Payment Mode" 
           value={
-            order.payment === "razorpay" ? "Razorpay Gateway (Online)" :
+            order.payment === "upi-direct" ? "Direct UPI QR (manual verification)" :
             order.payment === "googlepay" ? "Google Pay (UPI)" :
             order.payment === "phonepe" ? "PhonePe (UPI)" :
             order.payment === "paytm" ? "Paytm (UPI)" :
@@ -52,9 +61,8 @@ export default function ConfirmationPage({ ctx }) {
             order.payment === "cod" ? "Cash on Delivery" : "Prepaid Online"
           } 
         />
-        {order.paymentReference && <Row label="UTR / Reference ID" value={order.paymentReference} />}
-        {order.razorpayPaymentId && <Row label="Razorpay Payment ID" value={order.razorpayPaymentId} />}
-        <Row label="Payment Status" value={order.paymentStatus || "Paid"} green />
+        {order.paymentReference && <Row label="Payment Reference" value={order.paymentReference} />}
+        <Row label="Payment Status" value={order.paymentStatus || "Pending"} green={order.paymentStatus === "Paid"} />
       </div>
 
       <div style={{ display: "flex", gap: 12, marginTop: 22, justifyContent: "center", flexWrap: "wrap" }}>

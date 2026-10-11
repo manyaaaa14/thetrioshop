@@ -11,7 +11,7 @@ export default function ProductCard({ p, ctx }) {
   const [heartPop, setHeartPop] = useState(false);
 
   return (
-    <div className="fade-in" style={{ background: "white", borderRadius: 12, overflow: "hidden", border: "1px solid #eee", position: "relative", transition: "box-shadow .2s, transform .2s" }}
+    <div className="fade-in product-card" style={{ background: "white", borderRadius: 12, overflow: "hidden", border: "1px solid #eee", position: "relative", transition: "box-shadow .2s, transform .2s" }}
       onMouseEnter={(e) => e.currentTarget.style.boxShadow = "0 8px 20px rgba(0,0,0,.08)"}
       onMouseLeave={(e) => e.currentTarget.style.boxShadow = "none"}
     >
@@ -55,4 +55,3 @@ export default function ProductCard({ p, ctx }) {
 export function Badge({ text, bg }) {
   return <span style={{ background: bg, color: "white", fontSize: 9.5, fontWeight: 700, padding: "2px 6px", borderRadius: 4, letterSpacing: .3 }}>{text}</span>;
 }
-

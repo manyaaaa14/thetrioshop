@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { PRODUCTS, CATEGORIES, BANNERS } from "./data/products";
+import { PRODUCTS, CATEGORIES, BANNERS, DEFAULT_ANNOUNCEMENT } from "./data/products";
 import { loadState, saveState } from "./lib/storage";
 import { uid } from "./lib/format";
 import { GLOBAL_CSS } from "./styles/globalStyles";
 import { api } from "./services/api";
+import { signOutFirebase } from "./lib/firebase";
 
 import Header from "./components/layout/Header";
 import MobileMenu from "./components/layout/MobileMenu";
@@ -41,6 +42,7 @@ export default function TrioShopApp() {
   const [products, setProducts] = useState(PRODUCTS);
   const [categories, setCategories] = useState(CATEGORIES);
   const [banners, setBanners] = useState(BANNERS);
+  const [announcement, setAnnouncement] = useState(DEFAULT_ANNOUNCEMENT);
   const [cart, setCart] = useState({}); // id -> {qty, color}
   const [wishlist, setWishlist] = useState({}); // id -> true
   const [orders, setOrders] = useState([]);
@@ -80,10 +82,11 @@ export default function TrioShopApp() {
 
   async function refreshCatalog() {
     try {
-      const [prodRes, catRes, banRes] = await Promise.allSettled([
+      const [prodRes, catRes, banRes, announcementRes] = await Promise.allSettled([
         api.products.getAll(),
         api.categories.getAll(),
-        api.admin.getBanners(),
+        api.banners.getAll(),
+        api.announcement.get(),
       ]);
 
       if (prodRes.status === "fulfilled" && prodRes.value?.products?.length > 0) {
@@ -92,8 +95,11 @@ export default function TrioShopApp() {
       if (catRes.status === "fulfilled" && catRes.value?.categories?.length > 0) {
         setCategories(catRes.value.categories);
       }
-      if (banRes.status === "fulfilled" && banRes.value?.banners?.length > 0) {
+      if (banRes.status === "fulfilled" && Array.isArray(banRes.value?.banners)) {
         setBanners(banRes.value.banners);
+      }
+      if (announcementRes.status === "fulfilled" && announcementRes.value?.announcement) {
+        setAnnouncement({ ...DEFAULT_ANNOUNCEMENT, ...announcementRes.value.announcement });
       }
     } catch (err) {
       console.error("Error refreshing catalog:", err);
@@ -252,24 +258,8 @@ export default function TrioShopApp() {
     setLoading(true);
     try {
       let order = orderDraft.directOrder || null;
-
       if (!order) {
-        // Call backend API to validate price, coupon, decrement stock, and create order
-        const res = await api.orders.create({
-          items: orderDraft.items,
-          address: orderDraft.address,
-          payment: orderDraft.payment,
-          couponCode: orderDraft.couponCode,
-          utr: orderDraft.utr,
-          paymentVerified: orderDraft.paymentVerified,
-          upiId: orderDraft.upiId,
-        });
-
-        if (res.success && res.order) {
-          order = res.order;
-        } else {
-          throw new Error(res.message || "Failed to place order");
-        }
+        throw new Error("Payment must be verified before an order is created.");
       }
 
       if (order) {
@@ -280,7 +270,7 @@ export default function TrioShopApp() {
         // Refresh live product catalog to show updated stock
         await refreshCatalog();
 
-        showToast("Order placed successfully! 🎉", "check");
+        showToast(order.paymentStatus === "Paid" ? "Order placed successfully! 🎉" : "Order submitted. Payment verification is pending.", order.paymentStatus === "Paid" ? "check" : "warn");
         goto("confirmation", { orderId: order.id, order });
       }
     } catch (err) {
@@ -319,6 +309,7 @@ export default function TrioShopApp() {
 
   function logout() {
     api.auth.logout();
+    signOutFirebase().catch((err) => console.error("Firebase sign-out failed:", err));
     setUser(null);
     setIsAdmin(false);
     showToast("Logged out successfully", "check");
@@ -329,7 +320,7 @@ export default function TrioShopApp() {
     return (
       <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "#F9FAFB", color: "#7C3AED", fontFamily: "sans-serif" }}>
         <div style={{ width: 48, height: 48, borderRadius: "50%", border: "4px solid #E9D5FF", borderTopColor: "#7C3AED", animation: "spin 1s linear infinite", marginBottom: 16 }} />
-        <div style={{ fontWeight: 800, fontSize: 18, letterSpacing: 1 }}>THE TRIO SHOP</div>
+        <img src="/blora-logo.png" alt="BLORA" style={{ width: 120, height: 86, objectFit: "contain" }} />
         <div style={{ fontSize: 13, color: "#6B7280", marginTop: 4 }}>Connecting catalog & server…</div>
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
@@ -337,7 +328,7 @@ export default function TrioShopApp() {
   }
 
   const ctx = {
-    view, goto, products, setProducts, categories, banners, cart, wishlist, orders, setOrders,
+    view, goto, products, setProducts, categories, banners, announcement, cart, wishlist, orders, setOrders,
     user, setUser, isAdmin, setIsAdmin, addToCart, updateCartQty, removeFromCart, toggleWishlist,
     placeOrder, updateOrderStatus, cancelOrder, refreshCatalog, refreshOrders, refreshAuthSession, logout,
     showToast, filters, setFilters, searchQuery, setSearchQuery, loading, setLoading,
@@ -348,7 +339,7 @@ export default function TrioShopApp() {
   }
 
   return (
-    <div style={{ fontFamily: "'Inter', system-ui, sans-serif", background: "#F1F3F6", minHeight: "100vh", color: "#212121", width: "100%", overflowX: "hidden" }}>
+    <div className="blora-app" style={{ fontFamily: "'Inter', system-ui, sans-serif", background: "#F1F3F6", minHeight: "100vh", color: "#212121", width: "100%", overflowX: "hidden" }}>
       <style>{GLOBAL_CSS}</style>
       <Header ctx={ctx} menuOpen={menuOpen} setMenuOpen={setMenuOpen} setAuthModal={setAuthModal} cartCount={cartCount} wishlistCount={wishlistCount} />
       {menuOpen && <MobileMenu ctx={ctx} setMenuOpen={setMenuOpen} setAuthModal={setAuthModal} />}

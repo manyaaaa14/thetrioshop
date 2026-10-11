@@ -46,7 +46,7 @@ export default function HomePage({ ctx }) {
               }}
             >
               <div>
-                <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 2, opacity: 0.9 }}>THE TRIO SHOP</div>
+                <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 2, opacity: 0.9 }}>BLORA</div>
                 <div style={{ fontSize: 30, fontWeight: 800, marginTop: 4 }}>{b.title}</div>
                 <div style={{ fontSize: 14, marginTop: 6, opacity: 0.95 }}>{b.sub}</div>
                 <button
@@ -113,7 +113,7 @@ export default function HomePage({ ctx }) {
       <div style={{ maxWidth: 1200, margin: "30px auto", padding: "0 14px" }}>
         <div style={{ borderRadius: 16, background: "linear-gradient(135deg,#7C3AED,#EC4899)", padding: "26px 24px", color: "white", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 14, boxShadow: "0 10px 25px rgba(236,72,153,.2)" }}>
           <div>
-            <div style={{ fontWeight: 800, fontSize: 19 }}>Follow THE TRIO SHOP on Instagram</div>
+            <div style={{ fontWeight: 800, fontSize: 19 }}>Follow BLORA on Instagram</div>
             <div style={{ fontSize: 13.5, opacity: 0.9, marginTop: 3 }}>Get styling tips, customer unboxings & flash restocks</div>
           </div>
           <a href="https://www.instagram.com/_thetrioshop?igsh=NmQ5MGxxMzkwMHB6&utm_source=qr" target="_blank" rel="noreferrer" style={{ background: "white", color: "#7C3AED", fontWeight: 800, fontSize: 13.5, padding: "11px 20px", borderRadius: 999, display: "flex", alignItems: "center", gap: 8, textDecoration: "none", boxShadow: "0 4px 12px rgba(0,0,0,.1)" }}>

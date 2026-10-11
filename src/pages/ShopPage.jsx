@@ -32,7 +32,7 @@ export default function ShopPage({ ctx, presetCategory }) {
   const categoryName = activeCategory ? activeCategories.find((c) => c.id === activeCategory)?.name || activeCategory : "All Products";
 
   return (
-    <div className="fade-in" style={{ maxWidth: 1200, margin: "16px auto", padding: "0 14px", display: "flex", gap: 20 }}>
+    <div className="fade-in shop-layout" style={{ maxWidth: 1200, margin: "16px auto", padding: "0 14px", display: "flex", gap: 20 }}>
       <aside style={{ width: 220, flexShrink: 0 }} className="filter-sidebar">
         <FilterPanel filters={filters} setFilters={setFilters} activeCategory={activeCategory} presetCategory={presetCategory} categories={activeCategories} />
       </aside>
@@ -59,7 +59,7 @@ export default function ShopPage({ ctx, presetCategory }) {
         {filtered.length === 0 ? (
           <EmptyState icon={<Search size={38} />} title="No products match your filters" sub="Try adjusting your price range or search terms" />
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(175px,1fr))", gap: 14 }}>
+          <div className="products-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(175px,1fr))", gap: 14 }}>
             {filtered.map((p) => <ProductCard key={p.id} p={p} ctx={ctx} />)}
           </div>
         )}

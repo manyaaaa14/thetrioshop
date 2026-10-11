@@ -16,8 +16,8 @@ export default function Header({ ctx, menuOpen, setMenuOpen, setAuthModal, cartC
     <header style={{ position: "sticky", top: 0, zIndex: 40 }}>
       <div style={{ background: "linear-gradient(90deg,#7C3AED,#DB2777)", color: "white", fontSize: 12, padding: "6px 14px", overflow: "hidden", whiteSpace: "nowrap" }}>
         <div className="ticker" style={{ display: "inline-block" }}>
-          ✨ THE TRIO SHOP SALE — Up to 70% OFF &nbsp;&nbsp;•&nbsp;&nbsp; 🚚 FREE delivery above ₹499 &nbsp;&nbsp;•&nbsp;&nbsp; 🎁 Use code TRIO50 for flat ₹50 OFF &nbsp;&nbsp;•&nbsp;&nbsp; ⚡ Express Shipping across India &nbsp;&nbsp;•&nbsp;&nbsp;
-          ✨ THE TRIO SHOP SALE — Up to 70% OFF &nbsp;&nbsp;•&nbsp;&nbsp; 🚚 FREE delivery above ₹499 &nbsp;&nbsp;•&nbsp;&nbsp; 🎁 Use code TRIO50 for flat ₹50 OFF &nbsp;&nbsp;•&nbsp;&nbsp; ⚡ Express Shipping across India &nbsp;&nbsp;•&nbsp;&nbsp;
+          ✨ BLORA SALE — Up to 70% OFF &nbsp;&nbsp;•&nbsp;&nbsp; 🚚 FREE delivery above ₹499 &nbsp;&nbsp;•&nbsp;&nbsp; 🎁 Use code TRIO50 for flat ₹50 OFF &nbsp;&nbsp;•&nbsp;&nbsp; ⚡ Express Shipping across India &nbsp;&nbsp;•&nbsp;&nbsp;
+          ✨ BLORA SALE — Up to 70% OFF &nbsp;&nbsp;•&nbsp;&nbsp; 🚚 FREE delivery above ₹499 &nbsp;&nbsp;•&nbsp;&nbsp; 🎁 Use code TRIO50 for flat ₹50 OFF &nbsp;&nbsp;•&nbsp;&nbsp; ⚡ Express Shipping across India &nbsp;&nbsp;•&nbsp;&nbsp;
         </div>
       </div>
       <div style={{ background: "white", borderBottom: "1px solid #eee", boxShadow: "0 2px 6px rgba(0,0,0,.04)" }}>
@@ -27,8 +27,8 @@ export default function Header({ ctx, menuOpen, setMenuOpen, setAuthModal, cartC
           </div>
           
           <a onClick={() => goto("home")} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", flexShrink: 0 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg,#7C3AED,#EC4899,#F97316)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 800, fontSize: 15, boxShadow: "0 2px 8px rgba(124,58,237,.3)" }}>T3</div>
-            <div style={{ fontWeight: 800, fontSize: 19, letterSpacing: -0.5, color: "#111827" }}>THE TRIO SHOP</div>
+            <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg,#7C3AED,#EC4899,#F97316)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 800, fontSize: 15, boxShadow: "0 2px 8px rgba(124,58,237,.3)" }}>B</div>
+            <div style={{ fontWeight: 800, fontSize: 19, letterSpacing: -0.5, color: "#111827" }}>BLORA</div>
           </a>
 
           <div style={{ flex: 1, position: "relative", maxWidth: 600 }} className="desktop-search">

@@ -9,6 +9,7 @@ export default function AdminOrders({ ctx }) {
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
+  const [verifyingPayments, setVerifyingPayments] = useState([]);
 
   useEffect(() => {
     loadAllOrders();
@@ -25,6 +26,21 @@ export default function AdminOrders({ ctx }) {
       console.warn("Could not fetch admin orders:", err.message);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function verifyDirectPayment(orderId) {
+    if (!window.confirm("Have you verified this transaction in the UPI account? Only continue if the received amount and reference match.")) return;
+    setVerifyingPayments((current) => [...current, orderId]);
+    try {
+      const response = await api.orders.verifyPayment(orderId);
+      if (!response.success || !response.order) throw new Error(response.message || "Unable to verify payment.");
+      setOrders((current) => current.map((order) => order.id === orderId ? response.order : order));
+      showToast("Payment marked as verified.", "check");
+    } catch (error) {
+      showToast(error.message || "Unable to verify payment.", "warn");
+    } finally {
+      setVerifyingPayments((current) => current.filter((id) => id !== orderId));
     }
   }
 
@@ -85,7 +101,8 @@ export default function AdminOrders({ ctx }) {
                 <div style={{ textAlign: "right" }}>
                   <div style={{ fontWeight: 800, fontSize: 16, color: "#111827" }}>{money(o.total)}</div>
                   <div style={{ fontSize: 11.5, color: "#6B7280", textTransform: "uppercase", fontWeight: 600 }}>
-                    {o.payment === "razorpay" ? "💳 Razorpay" :
+                    {o.payment === "upi-direct" ? "📷 Direct UPI QR" :
+                     o.payment === "upi" ? "📱 UPI" :
                      o.payment === "googlepay" ? "📱 GPay" :
                      o.payment === "phonepe" ? "🟣 PhonePe" :
                      o.payment === "paytm" ? "🔷 Paytm" :
@@ -93,14 +110,12 @@ export default function AdminOrders({ ctx }) {
                      o.payment === "qr" ? "📷 UPI QR" :
                      o.payment === "cod" ? "💵 COD" : "Prepaid"}
                   </div>
+                  <div style={{ fontSize: 11, color: o.paymentStatus === "Paid" ? "#15803D" : "#B45309", fontWeight: 700, marginTop: 3 }}>
+                    Payment: {o.paymentStatus || "Pending"}
+                  </div>
                   {o.paymentReference && (
                     <div style={{ fontSize: 11, color: "#7C3AED", fontFamily: "monospace", fontWeight: 700 }}>
-                      UTR: {o.paymentReference}
-                    </div>
-                  )}
-                  {o.razorpayPaymentId && (
-                    <div style={{ fontSize: 11, color: "#7C3AED", fontFamily: "monospace", fontWeight: 700 }}>
-                      ID: {o.razorpayPaymentId}
+                      Payment reference: {o.paymentReference}
                     </div>
                   )}
                 </div>
@@ -113,8 +128,22 @@ export default function AdminOrders({ ctx }) {
               </div>
 
               <div style={{ fontSize: 12, color: "#6B7280", marginTop: 8 }}>
-                <strong>Shipping to:</strong> {o.address?.address}, {o.address?.city}, {o.address?.state} - {o.address?.pincode}
+                <strong>{o.shippingMethod === "express" ? "Express shipping" : "Standard shipping"}:</strong> {o.address?.address}, {o.address?.city}, {o.address?.state} - {o.address?.pincode}
               </div>
+
+              {o.payment === "upi-direct" && o.paymentStatus === "Pending" && o.paymentReference && (
+                <div style={{ marginTop: 10, padding: 10, borderRadius: 8, background: "#FFFBEB", border: "1px solid #FDE68A", fontSize: 12, color: "#92400E" }}>
+                  Check the UPI account for {money(o.total)} and match reference <strong style={{ fontFamily: "monospace" }}>{o.paymentReference}</strong> before marking this payment verified.
+                  <button
+                    type="button"
+                    onClick={() => verifyDirectPayment(o.id)}
+                    disabled={verifyingPayments.includes(o.id)}
+                    style={{ display: "block", marginTop: 8, border: "none", borderRadius: 6, background: "#15803D", color: "white", padding: "7px 11px", fontSize: 12, fontWeight: 700, cursor: verifyingPayments.includes(o.id) ? "not-allowed" : "pointer" }}
+                  >
+                    {verifyingPayments.includes(o.id) ? "Verifying…" : "Mark payment verified"}
+                  </button>
+                </div>
+              )}
 
               {/* Status change actions */}
               <div style={{ display: "flex", gap: 8, marginTop: 12, alignItems: "center", flexWrap: "wrap", paddingTop: 10, borderTop: "1px solid #F3F4F6" }}>

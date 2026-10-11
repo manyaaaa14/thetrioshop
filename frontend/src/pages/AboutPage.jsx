@@ -9,7 +9,7 @@ export default function AboutPage() {
         <div style={{ fontSize: 14, marginTop: 8, opacity: .95 }}>Small brand, big heart — since day one.</div>
       </div>
       <p style={{ fontSize: 14, color: "#444", lineHeight: 1.8, marginTop: 20 }}>
-        THE TRIO SHOP started as a tiny passion project between three friends who loved hunting for pretty, affordable things — jewellery, bags, stickers, and little gifts that make everyday life feel special. What began as a small Instagram page has grown into a shop trusted by thousands of happy customers across India.
+        BLORA started as a tiny passion project between three friends who loved hunting for pretty, affordable things — jewellery, bags, stickers, and little gifts that make everyday life feel special. What began as a small Instagram page has grown into a shop trusted by thousands of happy customers across India.
       </p>
       <p style={{ fontSize: 14, color: "#444", lineHeight: 1.8 }}>
         We hand-pick every product for quality and style, work directly with small manufacturers, and ship fast so you get your order without the wait. No middlemen, no markups — just good taste at fair prices.

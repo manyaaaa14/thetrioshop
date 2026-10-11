@@ -320,7 +320,7 @@ export default function TrioShopApp() {
     return (
       <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "#F9FAFB", color: "#7C3AED", fontFamily: "sans-serif" }}>
         <div style={{ width: 48, height: 48, borderRadius: "50%", border: "4px solid #E9D5FF", borderTopColor: "#7C3AED", animation: "spin 1s linear infinite", marginBottom: 16 }} />
-        <div style={{ fontWeight: 800, fontSize: 18, letterSpacing: 1 }}>THE TRIO SHOP</div>
+        <div style={{ fontWeight: 800, fontSize: 18, letterSpacing: 1 }}>BLORA</div>
         <div style={{ fontSize: 13, color: "#6B7280", marginTop: 4 }}>Connecting catalog & server…</div>
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
