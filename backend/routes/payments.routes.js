@@ -100,7 +100,7 @@ router.post("/direct-quote", (req, res) => {
   }
 });
 
-router.post("/direct-order", optionalUser, (req, res) => {
+router.post("/direct-order", optionalUser, async (req, res) => {
   try {
     if (!process.env.PAYMENT_UPI_ID) {
       return res.status(503).json({ success: false, message: "Direct UPI payment is not configured." });
@@ -133,7 +133,7 @@ router.post("/direct-order", optionalUser, (req, res) => {
     }
 
     const now = new Date().toISOString();
-    const order = db.insert("orders", {
+    const order = await db.insertPersisted("orders", {
       id: `BLORA${Date.now()}${Math.floor(Math.random() * 1000)}`,
       ...quote,
       userId: req.user?.id || null,

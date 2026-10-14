@@ -4,6 +4,9 @@ const categorySchema = new mongoose.Schema(
   {
     id: { type: String, required: true, unique: true, index: true },
     name: { type: String, required: true },
+    emoji: { type: String, default: "✨" },
+    color: { type: String, default: "#F3E8FF" },
+    order: { type: Number, default: 0 },
     slug: { type: String },
     icon: { type: String, default: "🛍️" },
     description: { type: String, default: "" },

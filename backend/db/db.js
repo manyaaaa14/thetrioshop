@@ -78,32 +78,40 @@ class UnifiedDatabase {
   async syncToMongoDB() {
     if (!isMongoConnected()) return;
     try {
-      // Check if products collection is empty in MongoDB; if so, populate from local
-      const productCount = await ProductModel.countDocuments();
-      if (productCount === 0 && this.data.products?.length > 0) {
-        console.log("🌱 Seeding MongoDB Atlas collections with initial catalog data...");
-        if (this.data.users?.length) {
-          await UserModel.insertMany(this.data.users, { ordered: false }).catch(() => {});
+      const models = Object.entries(modelMap);
+      const counts = await Promise.all(models.map(([, model]) => model.countDocuments()));
+      if (counts.every((count) => count === 0)) {
+        console.log("🌱 Initializing MongoDB Atlas from the local store...");
+        for (const [collection, model] of models) {
+          const records = this.data[collection] || [];
+          if (records.length > 0) {
+            await model.insertMany(records);
+          }
         }
-        if (this.data.products?.length) {
-          await ProductModel.insertMany(this.data.products, { ordered: false }).catch(() => {});
-        }
-        if (this.data.categories?.length) {
-          await CategoryModel.insertMany(this.data.categories, { ordered: false }).catch(() => {});
-        }
-        if (this.data.coupons?.length) {
-          await CouponModel.insertMany(this.data.coupons, { ordered: false }).catch(() => {});
-        }
-        if (this.data.reviews?.length) {
-          await ReviewModel.insertMany(this.data.reviews, { ordered: false }).catch(() => {});
-        }
-        if (this.data.orders?.length) {
-          await OrderModel.insertMany(this.data.orders, { ordered: false }).catch(() => {});
-        }
-        console.log("✅ Initial data successfully synchronized into MongoDB Atlas!");
       }
+
+      for (const [collection, model] of models) {
+        const records = await model.find().lean();
+        this.data[collection] = records.map(({ _id, __v, ...record }) => {
+          if (collection === "categories") {
+            return { ...record, emoji: record.emoji || record.icon || "✨" };
+          }
+          if (collection === "products") {
+            return {
+              ...record,
+              desc: record.desc || record.description || "",
+              badges: Array.isArray(record.badges) ? record.badges : record.badge ? [record.badge] : [],
+              ratingCount: record.ratingCount ?? record.reviewsCount ?? 0,
+            };
+          }
+          return record;
+        });
+      }
+      this.persist();
+      console.log("✅ MongoDB data loaded into the application store.");
     } catch (err) {
-      console.warn("Notice on MongoDB initial sync:", err.message);
+      console.error("MongoDB data initialization failed:", err.message);
+      throw err;
     }
   }
 
@@ -146,15 +154,8 @@ class UnifiedDatabase {
   }
 
   insert(collection, item) {
-    const col = this.getCollection(collection);
-    const newItem = {
-      ...item,
-      id: item.id || `id_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
-      createdAt: item.createdAt || new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    col.unshift(newItem);
-    this.persist();
+    const newItem = this.createRecord(item);
+    this.addRecord(collection, newItem);
 
     // Async write to MongoDB
     if (isMongoConnected() && modelMap[collection]) {
@@ -164,6 +165,30 @@ class UnifiedDatabase {
     }
 
     return newItem;
+  }
+
+  async insertPersisted(collection, item) {
+    const newItem = this.createRecord(item);
+    if (isMongoConnected() && modelMap[collection]) {
+      await modelMap[collection].create(newItem);
+    }
+    this.addRecord(collection, newItem);
+    return newItem;
+  }
+
+  createRecord(item) {
+    return {
+      ...item,
+      id: item.id || `id_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+      createdAt: item.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+  }
+
+  addRecord(collection, newItem) {
+    const col = this.getCollection(collection);
+    col.unshift(newItem);
+    this.persist();
   }
 
   update(collection, id, updates) {
@@ -209,6 +234,22 @@ class UnifiedDatabase {
     return true;
   }
 
+  async removePersisted(collection, id) {
+    const col = this.getCollection(collection);
+    const index = col.findIndex((item) => String(item.id) === String(id));
+
+    let removedFromMongo = false;
+    if (isMongoConnected() && modelMap[collection]) {
+      const removed = await modelMap[collection].findOneAndDelete({ id: String(id) });
+      removedFromMongo = Boolean(removed);
+    }
+
+    if (index === -1 && !removedFromMongo) return false;
+    if (index !== -1) col.splice(index, 1);
+    this.persist();
+    return true;
+  }
+
   // Cart helper
   getUserCart(userId) {
     if (!this.data.carts) this.data.carts = {};
@@ -237,4 +278,6 @@ class UnifiedDatabase {
 }
 
 export const db = new UnifiedDatabase();
-db.init().catch((err) => console.error("Database initialization error:", err));
+db.ready = db.init().catch((err) => {
+  console.error("Database initialization error:", err);
+});

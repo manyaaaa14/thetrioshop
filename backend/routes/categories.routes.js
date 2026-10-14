@@ -42,9 +42,9 @@ router.post("/", protectAdmin, (req, res) => {
 });
 
 // DELETE /api/categories/:id - Delete category (Admin)
-router.delete("/:id", protectAdmin, (req, res) => {
+router.delete("/:id", protectAdmin, async (req, res) => {
   try {
-    const removed = db.remove("categories", req.params.id);
+    const removed = await db.removePersisted("categories", req.params.id);
     if (!removed) {
       return res.status(404).json({ success: false, message: "Category not found" });
     }

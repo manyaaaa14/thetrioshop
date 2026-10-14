@@ -62,7 +62,7 @@ export default function AdminApp({ ctx }) {
         <div style={{ padding: 20 }}>
           {page === "dashboard" && <AdminDashboard ctx={ctx} />}
           {page === "products" && <AdminProducts ctx={ctx} />}
-          {page === "categories" && <AdminCategories />}
+          {page === "categories" && <AdminCategories ctx={ctx} />}
           {page === "orders" && <AdminOrders ctx={ctx} />}
           {page === "customers" && <AdminCustomers ctx={ctx} />}
           {page === "inventory" && <AdminInventory ctx={ctx} />}

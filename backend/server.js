@@ -4,7 +4,7 @@ dotenv.config();
 import express from "express";
 import cors from "cors";
 import { db } from "./db/db.js";
-import { connectMongoDB } from "./db/mongodb.js";
+import { isMongoConnected } from "./db/mongodb.js";
 import { seedDatabase } from "./db/seed.js";
 
 // Routes
@@ -25,11 +25,34 @@ const PORT = process.env.PORT || 5000;
 
 // Initialize Database connections & seeding
 async function initializeServer() {
-  await connectMongoDB().catch((err) => console.error("MongoDB connect error:", err.message));
+  await db.ready;
   await seedDatabase().catch((err) => console.error("Seed check error:", err.message));
+  if (isMongoConnected()) {
+    await db.syncToMongoDB();
+  }
 }
 
-initializeServer();
+initializeServer().then(() => {
+  const server = app.listen(PORT, () => {
+    console.log(`===========================================`);
+    console.log(`🛍️  BLORA Backend API`);
+    console.log(`🌐  Server running on http://localhost:${PORT}`);
+    console.log(`📡  Health check: http://localhost:${PORT}/api/health`);
+    console.log(`===========================================`);
+  });
+
+  server.on("error", (err) => {
+    if (err.code === "EADDRINUSE") {
+      console.error(`❌ Port ${PORT} is already in use by another running process.`);
+      console.log(`💡 Either stop the other process on port ${PORT} or set a different PORT in .env (e.g. PORT=5001).`);
+    } else {
+      console.error("Server error:", err);
+    }
+  });
+}).catch((err) => {
+  console.error("❌ Server initialization failed:", err);
+  process.exitCode = 1;
+});
 
 // Middleware
 app.use(cors({
@@ -49,7 +72,7 @@ app.get(["/api/health", "/health"], (req, res) => {
   res.json({
     status: "ok",
     message: "BLORA API Server is running smoothly 🚀",
-    database: process.env.MONGODB_URI ? "MongoDB Atlas" : "Local JSON Store",
+    database: isMongoConnected() ? "MongoDB Atlas" : "Local JSON Store",
     timestamp: new Date().toISOString(),
     version: "1.0.0",
   });
@@ -76,21 +99,3 @@ for (const [routePath, router] of routeList) {
 
 // Error Handler
 app.use(errorHandler);
-
-// Start Server
-const server = app.listen(PORT, () => {
-  console.log(`===========================================`);
-  console.log(`🛍️  BLORA Backend API`);
-  console.log(`🌐  Server running on http://localhost:${PORT}`);
-  console.log(`📡  Health check: http://localhost:${PORT}/api/health`);
-  console.log(`===========================================`);
-});
-
-server.on("error", (err) => {
-  if (err.code === "EADDRINUSE") {
-    console.error(`❌ Port ${PORT} is already in use by another running process.`);
-    console.log(`💡 Either stop the other process on port ${PORT} or set a different PORT in .env (e.g. PORT=5001).`);
-  } else {
-    console.error("Server error:", err);
-  }
-});

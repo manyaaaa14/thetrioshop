@@ -89,10 +89,10 @@ export default function TrioShopApp() {
         api.announcement.get(),
       ]);
 
-      if (prodRes.status === "fulfilled" && prodRes.value?.products?.length > 0) {
+      if (prodRes.status === "fulfilled" && Array.isArray(prodRes.value?.products)) {
         setProducts(prodRes.value.products);
       }
-      if (catRes.status === "fulfilled" && catRes.value?.categories?.length > 0) {
+      if (catRes.status === "fulfilled" && Array.isArray(catRes.value?.categories)) {
         setCategories(catRes.value.categories);
       }
       if (banRes.status === "fulfilled" && Array.isArray(banRes.value?.banners)) {

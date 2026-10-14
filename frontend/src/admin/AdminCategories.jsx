@@ -19,11 +19,11 @@ export default function AdminCategories({ ctx }) {
   async function loadCategories() {
     try {
       const res = await api.categories.getAll();
-      if (res.categories && res.categories.length > 0) {
+      if (Array.isArray(res.categories)) {
         setCats(res.categories);
       }
     } catch (err) {
-      console.warn("Using fallback categories");
+      console.error("Unable to load categories:", err);
     }
   }
 

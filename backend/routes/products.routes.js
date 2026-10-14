@@ -147,9 +147,9 @@ router.put("/:id", protectAdmin, (req, res) => {
 });
 
 // DELETE /api/products/:id - Delete product (Admin)
-router.delete("/:id", protectAdmin, (req, res) => {
+router.delete("/:id", protectAdmin, async (req, res) => {
   try {
-    const deleted = db.remove("products", req.params.id);
+    const deleted = await db.removePersisted("products", req.params.id);
     if (!deleted) {
       return res.status(404).json({ success: false, message: "Product not found" });
     }
