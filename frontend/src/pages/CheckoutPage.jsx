@@ -35,7 +35,7 @@ export default function CheckoutPage({ ctx, setAuthModal }) {
   const [paymentConfig, setPaymentConfig] = useState({
     razorpayKeyId: null,
     isRazorpayConfigured: false,
-    paymentUpiId: "9729794568@fam",
+    paymentUpiId: "manishataneja980@oksbi",
   });
   const [showPaymentStep, setShowPaymentStep] = useState(false);
   const [razorpayProcessing, setRazorpayProcessing] = useState(false);
@@ -68,7 +68,7 @@ export default function CheckoutPage({ ctx, setAuthModal }) {
           setPaymentConfig({
             razorpayKeyId: cfg.razorpayKeyId || import.meta.env.VITE_RAZORPAY_KEY_ID || null,
             isRazorpayConfigured: cfg.isRazorpayConfigured || Boolean(cfg.razorpayKeyId || import.meta.env.VITE_RAZORPAY_KEY_ID),
-            paymentUpiId: cfg.paymentUpiId || import.meta.env.VITE_PAYMENT_UPI_ID || "9729794568@fam",
+            paymentUpiId: cfg.paymentUpiId || import.meta.env.VITE_PAYMENT_UPI_ID || "manishataneja980@oksbi",
           });
         }
       })
@@ -76,7 +76,7 @@ export default function CheckoutPage({ ctx, setAuthModal }) {
         setPaymentConfig({
           razorpayKeyId: import.meta.env.VITE_RAZORPAY_KEY_ID || null,
           isRazorpayConfigured: Boolean(import.meta.env.VITE_RAZORPAY_KEY_ID),
-          paymentUpiId: import.meta.env.VITE_PAYMENT_UPI_ID || "9729794568@fam",
+          paymentUpiId: import.meta.env.VITE_PAYMENT_UPI_ID || "manishataneja980@oksbi",
         });
       });
   }, []);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, ShoppingBag } from "lucide-react";
 import { STATUS_FLOW } from "../lib/constants";
 import { money } from "../lib/format";
 import StatusPill from "../components/common/StatusPill";
@@ -132,10 +132,28 @@ export default function AdminOrders({ ctx }) {
                 </div>
               </div>
 
-              {/* Items summary */}
-              <div style={{ background: "#F9FAFB", padding: "8px 12px", borderRadius: 8, marginTop: 10, fontSize: 12.5, color: "#4B5563" }}>
-                <strong>Ordered Items:</strong>{" "}
-                {o.items?.map((it) => `${it.name} (Qty: ${it.qty}${it.color ? `, ${it.color}` : ""})`).join(" • ")}
+              <div style={{ marginTop: 10 }}>
+                <strong style={{ display: "block", fontSize: 12.5, color: "#4B5563", marginBottom: 7 }}>Ordered Items:</strong>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {(o.items || []).map((it, index) => {
+                    const image = it.image || ctx.products?.find((product) => product.id === it.id)?.images?.[0];
+                    return (
+                      <div key={`${it.id || it.name}-${index}`} style={{ display: "flex", alignItems: "center", gap: 9, background: "#F9FAFB", border: "1px solid #E5E7EB", borderRadius: 8, padding: 7, minWidth: 180, maxWidth: 280 }}>
+                        <div style={{ width: 52, height: 52, flex: "0 0 52px", borderRadius: 6, background: "#F3F4F6", display: "grid", placeItems: "center", overflow: "hidden", color: "#9CA3AF" }}>
+                          {image ? (
+                            <img src={image} alt={it.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={(event) => { event.currentTarget.style.display = "none"; }} />
+                          ) : (
+                            <ShoppingBag size={20} aria-hidden="true" />
+                          )}
+                        </div>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontSize: 12, fontWeight: 700, color: "#374151" }}>{it.name}</div>
+                          <div style={{ fontSize: 11, color: "#6B7280" }}>Qty: {it.qty}{it.color ? ` · ${it.color}` : ""}</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
               <div style={{ fontSize: 12, color: "#6B7280", marginTop: 8 }}>
