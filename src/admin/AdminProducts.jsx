@@ -5,6 +5,8 @@ import { money } from "../lib/format";
 import Input from "../components/common/Input";
 import { api } from "../services/api";
 
+const MAX_PRODUCT_IMAGE_SIZE = 2 * 1024 * 1024;
+
 export default function AdminProducts({ ctx }) {
   const { products, setProducts, showToast, refreshCatalog } = ctx;
   const [editing, setEditing] = useState(null); // product or "new"
@@ -185,6 +187,7 @@ export default function AdminProducts({ ctx }) {
 }
 
 function ProductEditModal({ product, onClose, onSave, loading }) {
+  const [imageError, setImageError] = useState("");
   const [form, setForm] = useState(
     product || {
       name: "",
@@ -193,13 +196,55 @@ function ProductEditModal({ product, onClose, onSave, loading }) {
       mrp: "",
       stock: "",
       desc: "",
-      images: ["https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=600"],
+      images: [],
       badges: [],
       rating: 4.5,
       ratingCount: 1,
       variants: { size: [], color: [] },
     }
   );
+
+  function selectImage(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setImageError("Choose an image file.");
+      return;
+    }
+    if (file.size > MAX_PRODUCT_IMAGE_SIZE) {
+      setImageError("Image must be 2 MB or smaller.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result !== "string") {
+        setImageError("Unable to read this image. Please try another file.");
+        return;
+      }
+      setForm((current) => ({ ...current, images: [reader.result] }));
+      setImageError("");
+    };
+    reader.onerror = () => setImageError("Unable to read this image. Please try again.");
+    reader.readAsDataURL(file);
+    event.target.value = "";
+  }
+
+  function save() {
+    if (!form.images?.[0]) {
+      setImageError("Please upload a product image.");
+      return;
+    }
+
+    onSave({
+      ...form,
+      price: Number(form.price),
+      mrp: Number(form.mrp) || Number(form.price),
+      stock: Number(form.stock),
+      variants: form.variants || { size: [], color: [] },
+    });
+  }
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.5)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }} onClick={onClose}>
@@ -233,7 +278,15 @@ function ProductEditModal({ product, onClose, onSave, loading }) {
           </div>
 
           <Input label="Stock Quantity (Units)*" value={form.stock} onChange={(v) => setForm((f) => ({ ...f, stock: v.replace(/\D/g, "") }))} full placeholder="e.g. 50" />
-          <Input label="Image URL*" value={form.images?.[0] || ""} onChange={(v) => setForm((f) => ({ ...f, images: [v] }))} full placeholder="https://images.unsplash.com/..." />
+          <div>
+            <label htmlFor="product-image" style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 6, color: "#4B5563" }}>Product Image*</label>
+            <input id="product-image" type="file" accept="image/*" onChange={selectImage} style={{ width: "100%", border: "1px solid #D1D5DB", borderRadius: 8, padding: 8, fontSize: 13 }} />
+            <div style={{ fontSize: 11, color: "#6B7280", marginTop: 4 }}>Choose an image file (max 2 MB).</div>
+            {form.images?.[0] && (
+              <img src={form.images[0]} alt="Product preview" style={{ display: "block", width: 120, height: 120, objectFit: "cover", borderRadius: 8, border: "1px solid #E5E7EB", marginTop: 8 }} />
+            )}
+            {imageError && <div role="alert" style={{ color: "#DC2626", fontSize: 12, marginTop: 4 }}>{imageError}</div>}
+          </div>
           
           <div>
             <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 4, color: "#4B5563" }}>Product Description</div>
@@ -247,15 +300,7 @@ function ProductEditModal({ product, onClose, onSave, loading }) {
           </div>
 
           <button
-            onClick={() =>
-              onSave({
-                ...form,
-                price: Number(form.price),
-                mrp: Number(form.mrp) || Number(form.price),
-                stock: Number(form.stock),
-                variants: form.variants || { size: [], color: [] },
-              })
-            }
+            onClick={save}
             disabled={loading}
             style={{ background: "#7C3AED", color: "white", border: "none", padding: "12px 0", borderRadius: 8, fontWeight: 700, fontSize: 14, marginTop: 6, cursor: "pointer", opacity: loading ? 0.7 : 1 }}
           >

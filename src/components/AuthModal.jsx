@@ -35,23 +35,45 @@ export default function AuthModal({ type, onClose, ctx }) {
       if (isFirebaseConfigured) {
         let credential;
         if (mode === "signup") {
-          credential = await createUserWithEmailAndPassword(firebaseAuth, form.email, form.password);
-          await updateProfile(credential.user, { displayName: form.name });
+          try {
+            credential = await createUserWithEmailAndPassword(firebaseAuth, form.email, form.password);
+            await updateProfile(credential.user, { displayName: form.name });
+          } catch (firebaseError) {
+            console.warn("Firebase sign up failed, falling back to direct registration:", firebaseError.message);
+            res = await api.auth.register({
+              name: form.name,
+              email: form.email,
+              password: form.password,
+              phone: form.phone,
+            });
+          }
         } else {
           try {
             credential = await signInWithEmailAndPassword(firebaseAuth, form.email, form.password);
           } catch (firebaseError) {
-            if (!["auth/user-not-found", "auth/invalid-credential"].includes(firebaseError.code)) throw firebaseError;
+            console.warn("Firebase sign in failed, falling back to direct login:", firebaseError.message);
             res = await api.auth.login({ email: form.email, password: form.password });
           }
         }
 
         if (credential) {
-          res = await api.auth.firebaseSession({
-            idToken: await credential.user.getIdToken(),
-            name: mode === "signup" ? form.name : credential.user.displayName,
-            phone: form.phone,
-          });
+          try {
+            res = await api.auth.firebaseSession({
+              idToken: await credential.user.getIdToken(),
+              name: mode === "signup" ? form.name : credential.user.displayName,
+              phone: form.phone,
+            });
+          } catch (sessionErr) {
+            console.warn("Firebase session exchange failed, falling back to direct auth:", sessionErr.message);
+            res = mode === "signup"
+              ? await api.auth.register({
+                name: form.name,
+                email: form.email,
+                password: form.password,
+                phone: form.phone,
+              })
+              : await api.auth.login({ email: form.email, password: form.password });
+          }
         }
       } else {
         res = mode === "signup"
@@ -84,7 +106,12 @@ export default function AuthModal({ type, onClose, ctx }) {
           setError(verificationError.message || "Could not send the verification email.");
         }
       } else {
-        setError(err.message || "Authentication failed. Please check your credentials.");
+        const msg = err.message || "Authentication failed. Please check your credentials.";
+        if (msg === "Failed to fetch" || msg.includes("network-request-failed") || msg.includes("Unable to connect")) {
+          setError("Unable to connect to the authentication server. Please check your internet connection.");
+        } else {
+          setError(msg);
+        }
       }
     } finally {
       setLoading(false);
@@ -116,7 +143,12 @@ export default function AuthModal({ type, onClose, ctx }) {
         goto("admin-dashboard");
       }
     } catch (err) {
-      setError(err.message || "Invalid admin email or password");
+      const msg = err.message || "Invalid admin email or password";
+      if (msg === "Failed to fetch" || msg.includes("Unable to connect")) {
+        setError("Unable to connect to the server. Please check your internet connection.");
+      } else {
+        setError(msg);
+      }
     } finally {
       setLoading(false);
     }

@@ -28,7 +28,7 @@ router.post("/firebase-session", async (req, res, next) => {
 
     let firebaseAuth;
     try {
-      firebaseAuth = getFirebaseAdminAuth();
+      firebaseAuth = await getFirebaseAdminAuth();
     } catch (err) {
       console.error("Firebase Admin configuration error:", err.message);
       return res.status(503).json({
@@ -44,8 +44,16 @@ router.post("/firebase-session", async (req, res, next) => {
     let identity;
     try {
       identity = await firebaseAuth.verifyIdToken(idToken);
-    } catch {
-      return res.status(401).json({ success: false, message: "Invalid or expired Firebase ID token." });
+    } catch (err) {
+      if (["auth/argument-error", "auth/id-token-expired", "auth/invalid-id-token"].includes(err.code)) {
+        return res.status(401).json({ success: false, message: "Invalid or expired Firebase ID token." });
+      }
+
+      console.error("Firebase ID token verification failed:", err.message);
+      return res.status(503).json({
+        success: false,
+        message: "Firebase could not verify the sign-in token. Check the server Firebase project configuration and connectivity.",
+      });
     }
 
     if (!identity.uid || !identity.email) {

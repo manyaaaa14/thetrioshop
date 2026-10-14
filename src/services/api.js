@@ -6,13 +6,25 @@ function getApiBase() {
   if (envUrl) {
     return envUrl.endsWith("/api") ? envUrl : `${envUrl}/api`;
   }
-  if (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")) {
-    return "/api";
+  if (typeof window !== "undefined") {
+    const host = window.location.hostname;
+    if (
+      host === "localhost" ||
+      host === "127.0.0.1" ||
+      host === "0.0.0.0" ||
+      host.startsWith("192.168.") ||
+      host.startsWith("10.") ||
+      host.endsWith(".local") ||
+      host.endsWith(".netlify.app")
+    ) {
+      return "/api";
+    }
   }
   return "https://bloraa.onrender.com/api";
 }
 
 const API_BASE = getApiBase();
+const PROD_API_FALLBACK = "https://bloraa.onrender.com/api";
 
 function getToken() {
   try { return localStorage.getItem("trio_jwt_token") || null; } catch (e) { return null; }
@@ -34,7 +46,22 @@ async function request(endpoint, options = {}) {
   };
   const config = { ...options, headers };
   const target = API_BASE + endpoint;
-  const res = await fetch(target, config);
+
+  let res;
+  try {
+    res = await fetch(target, config);
+  } catch (networkErr) {
+    if (API_BASE.startsWith("/") && typeof window !== "undefined") {
+      try {
+        res = await fetch(PROD_API_FALLBACK + endpoint, config);
+      } catch {
+        throw new Error("Unable to connect to the server. Please check your internet connection.");
+      }
+    } else {
+      throw new Error("Unable to connect to the server. Please check your internet connection.");
+    }
+  }
+
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     const errorMsg = data.message || "Request failed with status " + res.status;
@@ -50,6 +77,7 @@ export const api = {
   // POST /api/auth/register  POST /api/auth/login  POST /api/auth/admin-login
   // GET  /api/auth/me        PUT  /api/auth/profile
   auth: {
+    hasToken() { return Boolean(getToken()); },
     async register(payload) { const data = await request("/auth/register", { method: "POST", body: JSON.stringify(payload) }); if (data.token) setToken(data.token); return data; },
     async login(payload) { const data = await request("/auth/login", { method: "POST", body: JSON.stringify(payload) }); if (data.token) setToken(data.token); return data; },
     async firebaseSession(payload) { const data = await request("/auth/firebase-session", { method: "POST", body: JSON.stringify(payload) }); if (data.token) setToken(data.token); return data; },

@@ -236,7 +236,7 @@ export default function CheckoutPage({ ctx, setAuthModal }) {
         currency: res.order.currency || "INR",
         name: "BLORA",
         description: `Order Payment (${items.length} items)`,
-        image: "https://thetrioshopp.onrender.com/favicon.ico",
+        image: "https://bloraa.onrender.com/favicon.ico",
         order_id: res.order.id,
         prefill: {
           name: form.name,

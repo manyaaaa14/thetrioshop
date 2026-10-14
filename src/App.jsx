@@ -107,8 +107,14 @@ export default function TrioShopApp() {
   }
 
   async function refreshAuthSession() {
+    if (!api.auth.hasToken()) {
+      setUser(null);
+      setIsAdmin(false);
+      return;
+    }
+
     try {
-      const meRes = await api.auth.me().catch(() => null);
+      const meRes = await api.auth.me();
       if (meRes?.user) {
         setUser(meRes.user);
         setIsAdmin(meRes.user.role === "admin");
@@ -135,7 +141,13 @@ export default function TrioShopApp() {
         }
       }
     } catch (err) {
-      console.log("No active backend session or guest mode");
+      if (err.status === 401) {
+        api.auth.logout();
+        setUser(null);
+        setIsAdmin(false);
+      } else {
+        console.error("Unable to restore backend session:", err);
+      }
     }
   }
 
