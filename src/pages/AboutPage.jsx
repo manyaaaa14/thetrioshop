@@ -6,13 +6,28 @@ export default function AboutPage() {
     <div className="fade-in" style={{ maxWidth: 760, margin: "20px auto", padding: "0 14px" }}>
       <div style={{ borderRadius: 16, background: "linear-gradient(135deg,#7C3AED,#EC4899)", color: "white", padding: "40px 24px", textAlign: "center" }}>
         <div style={{ fontWeight: 800, fontSize: 26 }}>Our Story</div>
-        <div style={{ fontSize: 14, marginTop: 8, opacity: .95 }}>Small brand, big heart — since day one.</div>
+        <div style={{ fontSize: 14, marginTop: 8, opacity: .95 }}>A dream built with love, passion, and courage.</div>
       </div>
       <p style={{ fontSize: 14, color: "#444", lineHeight: 1.8, marginTop: 20 }}>
-        BLORA started as a tiny passion project between three friends who loved hunting for pretty, affordable things — jewellery, bags, stickers, and little gifts that make everyday life feel special. What began as a small Instagram page has grown into a shop trusted by thousands of happy customers across India.
+        Every big dream begins with a small step, and BLORA is a dream built with love, passion, and courage. 💗✨
       </p>
       <p style={{ fontSize: 14, color: "#444", lineHeight: 1.8 }}>
-        We hand-pick every product for quality and style, work directly with small manufacturers, and ship fast so you get your order without the wait. No middlemen, no markups — just good taste at fair prices.
+        What started as a small idea to bring trendy, beautiful, and affordable products to everyone is becoming something more than just a shop. From jewellery and press-on nails to cute accessories and more, BLORA is here to make your everyday moments feel a little more special. 🎀
+      </p>
+      <p style={{ fontSize: 14, color: "#444", lineHeight: 1.8 }}>
+        Behind BLORA is a dreamer who believes that style shouldn’t be expensive and that everyone deserves to express themselves in their own way. Every order, every follow, and every bit of support means the world to us. 🫶🏻
+      </p>
+      <p style={{ fontSize: 14, color: "#444", lineHeight: 1.8 }}>
+        We’re not just building a brand; we’re building a family where every customer becomes a part of our journey.
+      </p>
+      <p style={{ fontSize: 14, color: "#444", lineHeight: 1.8 }}>
+        BLORA is more than a name. It’s a dream in the making. 🌷
+      </p>
+      <p style={{ fontSize: 14, color: "#444", lineHeight: 1.8 }}>
+        And this is only the beginning… 💌
+      </p>
+      <p style={{ fontSize: 14, color: "#444", lineHeight: 1.8 }}>
+        Thank you for being a part of our story. 🤍
       </p>
       <p style={{ fontSize: 13, color: "#7C2D12", background: "#FFF7ED", border: "1px solid #FED7AA", borderRadius: 10, padding: "10px 12px", marginTop: 14, fontWeight: 600 }}>
         Prepaid orders only. No returns or replacements. Payment number: 9729794568.
