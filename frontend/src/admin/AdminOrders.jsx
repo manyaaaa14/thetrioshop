@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { RefreshCw } from "lucide-react";
 import { STATUS_FLOW } from "../lib/constants";
 import { money } from "../lib/format";
 import StatusPill from "../components/common/StatusPill";
@@ -12,6 +13,8 @@ export default function AdminOrders({ ctx }) {
 
   useEffect(() => {
     loadAllOrders();
+    const interval = window.setInterval(loadAllOrders, 30000);
+    return () => window.clearInterval(interval);
   }, []);
 
   async function loadAllOrders() {
@@ -59,6 +62,14 @@ export default function AdminOrders({ ctx }) {
         <div style={{ marginLeft: "auto", fontSize: 12.5, color: "#6B7280" }}>
           Showing {filtered.length} of {orders.length} orders
         </div>
+        <button
+          type="button"
+          onClick={loadAllOrders}
+          disabled={loading}
+          style={{ display: "flex", alignItems: "center", gap: 6, border: "1px solid #D1D5DB", borderRadius: 8, background: "white", padding: "8px 12px", fontSize: 12.5, fontWeight: 600, cursor: loading ? "wait" : "pointer" }}
+        >
+          <RefreshCw size={14} /> {loading ? "Refreshing…" : "Refresh orders"}
+        </button>
       </div>
 
       {filtered.length === 0 ? (

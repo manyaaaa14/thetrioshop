@@ -43,7 +43,7 @@ export default function AdminProducts({ ctx }) {
   async function deleteProduct(id) {
     if (!window.confirm("Are you sure you want to permanently delete this product?")) return;
     try {
-      await api.products.delete(id);
+      await api.products.remove(id);
       setProducts((prev) => prev.filter((p) => p.id !== id));
       showToast("Product deleted", "check");
       if (refreshCatalog) refreshCatalog();

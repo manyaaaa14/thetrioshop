@@ -4,6 +4,7 @@ import { CATEGORIES } from "../data/products";
 import { api } from "../services/api";
 
 export default function AdminCategories({ ctx }) {
+  const { setCategories } = ctx;
   const [cats, setCats] = useState(CATEGORIES);
   const [showAdd, setShowAdd] = useState(false);
   const [name, setName] = useState("");
@@ -39,6 +40,7 @@ export default function AdminCategories({ ctx }) {
       });
       if (res.category) {
         setCats((prev) => [...prev, res.category]);
+        setCategories((prev) => [...prev, res.category]);
         setName("");
         setShowAdd(false);
         if (ctx?.showToast) ctx.showToast("Category created successfully! 🏷️", "check");
@@ -53,8 +55,9 @@ export default function AdminCategories({ ctx }) {
   async function handleDeleteCategory(id) {
     if (!window.confirm("Are you sure you want to delete this category?")) return;
     try {
-      await api.categories.delete(id);
+      await api.categories.remove(id);
       setCats((prev) => prev.filter((x) => x.id !== id));
+      setCategories((prev) => prev.filter((x) => x.id !== id));
       if (ctx?.showToast) ctx.showToast("Category deleted", "check");
     } catch (err) {
       if (ctx?.showToast) ctx.showToast(err.message || "Failed to delete category", "warn");
