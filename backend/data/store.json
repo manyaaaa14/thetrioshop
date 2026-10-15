@@ -1,6 +1,19 @@
 {
   "users": [
     {
+      "name": "manya",
+      "email": "manyataneja53@gmail.com",
+      "password": "manya14",
+      "firebaseUid": "VLQ4oeAVcGRUFuNeOyeJvEeSfFm2",
+      "phone": "9729794568",
+      "role": "user",
+      "address": null,
+      "isVerified": false,
+      "id": "id_1791728456664_mmxal3",
+      "createdAt": "2026-10-11T14:20:56.664Z",
+      "updatedAt": "2026-10-11T14:20:56.664Z"
+    },
+    {
       "name": "Test User",
       "email": "test_1788280932455@example.com",
       "password": "$2a$10$Y1QK20RO0cX7pETA72zsk.xviJzMAwyzCSmJGo7rdMXQ98VNvvrLe",
@@ -14,7 +27,7 @@
     {
       "name": "manya",
       "email": "learnotech9@gmail.com",
-      "password": "$2a$10$fDuq28PK4IV0xWab5XKab.RH53tL1Ao/nH/GNQ8jWPYGl5HpGc9He",
+      "password": "manyaa14",
       "phone": "9333334568",
       "role": "user",
       "address": {
@@ -30,7 +43,7 @@
     {
       "name": "manya",
       "email": "manyataneja1408@gmail.com",
-      "password": "$2a$10$rJS/w9bv6Nng6.LQPw1FB.cvITpcbS9TKZ0bxx7e6fQZ72nON0l/W",
+      "password": "manyaa@14",
       "phone": "9729794568",
       "role": "user",
       "address": null,
@@ -41,7 +54,7 @@
     {
       "name": "Manya Taneja",
       "email": "manishataneja980@gmail.com",
-      "password": "$2a$10$n9qi8G1Tn99GNddhCmv20e/0WUfOsnNXaPX2aRloU0kYGwmmpTphy",
+      "password": "Manyaa@14",
       "phone": "9729794568",
       "role": "user",
       "address": null,
@@ -53,13 +66,35 @@
       "id": "usr_admin",
       "name": "Trio Admin",
       "email": "admin97297@gmail.com",
-      "password": "$2a$10$PMaf2I2fIuh5ZH9ATB3NuOuONOhqAtidQKP/92a3VoQ.vfT2KRvxS",
+      "password": "tri09090",
       "role": "admin",
       "phone": "9876543200",
       "createdAt": "2026-08-20T12:38:11.579Z"
     }
   ],
   "products": [
+    {
+      "name": "bro",
+      "category": "jewellery",
+      "price": 499,
+      "mrp": 700,
+      "stock": 1,
+      "desc": "cgt",
+      "images": [
+        "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=600"
+      ],
+      "variants": {
+        "size": [],
+        "color": []
+      },
+      "badges": [],
+      "rating": 4.5,
+      "ratingCount": 1,
+      "hidden": false,
+      "id": "id_1791645143679_slvjve",
+      "createdAt": "2026-10-10T15:12:23.679Z",
+      "updatedAt": "2026-10-10T15:12:23.679Z"
+    },
     {
       "id": "p1",
       "name": "Oxidised Silver Jhumka Earrings",
@@ -93,7 +128,7 @@
       "mrp": 1999,
       "rating": 4.5,
       "ratingCount": 876,
-      "stock": 8,
+      "stock": 7,
       "badges": [],
       "images": [
         "https://images.unsplash.com/photo-1599459183200-59c7687a0275?w=600"
@@ -107,7 +142,7 @@
         ]
       },
       "hidden": false,
-      "updatedAt": "2026-08-23T10:20:21.309Z"
+      "updatedAt": "2026-10-10T17:09:36.529Z"
     },
     {
       "id": "p3",
@@ -212,7 +247,7 @@
       "mrp": 249,
       "rating": 4.7,
       "ratingCount": 3210,
-      "stock": 138,
+      "stock": 136,
       "badges": [],
       "images": [
         "https://images.unsplash.com/photo-1611931397228-de8b5abfe20d?w=600"
@@ -223,7 +258,7 @@
         "color": []
       },
       "hidden": false,
-      "updatedAt": "2026-08-23T10:20:26.156Z"
+      "updatedAt": "2026-10-10T17:09:36.526Z"
     },
     {
       "id": "p8",
@@ -389,6 +424,68 @@
     }
   ],
   "orders": [
+    {
+      "id": "TRIO862358",
+      "userId": "usr_admin",
+      "userEmail": "admin97297@gmail.com",
+      "items": [
+        {
+          "id": "p7",
+          "name": "Aesthetic Laptop Sticker Pack (50pc)",
+          "price": 99,
+          "mrp": 249,
+          "qty": 2,
+          "color": null,
+          "image": "https://images.unsplash.com/photo-1611931397228-de8b5abfe20d?w=600",
+          "category": "stickers"
+        },
+        {
+          "id": "p2",
+          "name": "Kundan Choker Necklace Set",
+          "price": 799,
+          "mrp": 1999,
+          "qty": 1,
+          "color": "Gold",
+          "image": "https://images.unsplash.com/photo-1599459183200-59c7687a0275?w=600",
+          "category": "jewellery"
+        }
+      ],
+      "subtotal": 997,
+      "discount": 0,
+      "appliedCoupon": null,
+      "delivery": 100,
+      "shippingMethod": "standard",
+      "total": 1097,
+      "status": "Confirmed",
+      "payment": "googlepay",
+      "paymentStatus": "Paid",
+      "paymentVerifiedAt": "2026-10-10T17:09:36.530Z",
+      "paymentReference": "12345678",
+      "upiId": "manishataneja980@oksbi",
+      "razorpayOrderId": null,
+      "razorpayPaymentId": null,
+      "razorpaySignature": null,
+      "address": {
+        "name": "manya",
+        "phone": "9729794568",
+        "email": "admin97297@gmail.com",
+        "address": "h no 58",
+        "city": "hisar",
+        "state": "haryana",
+        "pincode": "125001"
+      },
+      "cancelled": false,
+      "date": "2026-10-10T17:09:36.530Z",
+      "timeline": [
+        {
+          "status": "Confirmed",
+          "time": "2026-10-10T17:09:36.530Z",
+          "note": "Order placed successfully and payment confirmed."
+        }
+      ],
+      "createdAt": "2026-10-10T17:09:36.530Z",
+      "updatedAt": "2026-10-10T17:09:36.530Z"
+    },
     {
       "id": "TRIO109015",
       "userId": null,
@@ -988,8 +1085,8 @@
     },
     {
       "id": "b3",
-      "title": "FREE SHIPPING",
-      "sub": "On orders above â‚¹499",
+      "title": "STANDARD SHIPPING",
+      "sub": "Flat ₹100 shipping on every order",
       "grad": "from-blue-600 via-indigo-600 to-violet-600",
       "link": "shop",
       "active": true
@@ -1021,28 +1118,7 @@
         "color": null
       }
     },
-    "usr_admin": {
-      "id_1787475920390_l6op79": {
-        "qty": 1,
-        "color": null
-      },
-      "p2": {
-        "qty": 1,
-        "color": "Gold"
-      },
-      "p5": {
-        "qty": 1,
-        "color": "Beige"
-      },
-      "p8": {
-        "qty": 1,
-        "color": null
-      },
-      "p1": {
-        "qty": 1,
-        "color": "Silver"
-      }
-    },
+    "usr_admin": {},
     "id_1787476722986_e80t1l": {}
   },
   "wishlists": {}
