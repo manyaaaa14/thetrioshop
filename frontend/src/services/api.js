@@ -20,11 +20,11 @@ function getApiBase() {
       return "/api";
     }
   }
-  return "https://bloraa.onrender.com/api";
+  return "https://thetrioshopp.onrender.com/api";
 }
 
 const API_BASE = getApiBase();
-const PROD_API_FALLBACK = "https://bloraa.onrender.com/api";
+const PROD_API_FALLBACK = "https://thetrioshopp.onrender.com/api";
 
 function getToken() {
   try { return localStorage.getItem('trio_jwt_token') || null; } catch (e) { return null; }
