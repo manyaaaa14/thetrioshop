@@ -32,7 +32,7 @@ export default function AdminDashboard({ ctx }) {
   async function fetchStats() {
     try {
       setLoading(true);
-      const res = await api.admin.getStats();
+      const res = await api.admin.getDashboard();
       if (res.stats) {
         setStats(res.stats);
       }

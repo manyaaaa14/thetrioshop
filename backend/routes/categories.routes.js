@@ -15,22 +15,28 @@ router.get("/", (req, res) => {
 });
 
 // POST /api/categories - Create category (Admin)
-router.post("/", protectAdmin, (req, res) => {
+router.post("/", protectAdmin, async (req, res) => {
   try {
     const { name, emoji, color } = req.body;
-    if (!name) {
+    if (typeof name !== "string" || !name.trim()) {
       return res.status(400).json({ success: false, message: "Category name is required" });
     }
 
-    const id = name.toLowerCase().replace(/[^a-z0-9]/g, "");
-    const existing = db.findById("categories", id);
+    const normalizedName = name.trim();
+    const id = normalizedName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    if (!id) {
+      return res.status(400).json({ success: false, message: "Category name must contain letters or numbers." });
+    }
+    const existing = db.findOne("categories", (category) =>
+      category.id === id || (category.name || "").toLowerCase() === normalizedName.toLowerCase()
+    );
     if (existing) {
       return res.status(400).json({ success: false, message: "Category already exists" });
     }
 
-    const newCategory = db.insert("categories", {
+    const newCategory = await db.insertPersisted("categories", {
       id,
-      name: name.trim(),
+      name: normalizedName,
       emoji: emoji || "✨",
       color: color || "#F3E8FF",
     });
@@ -44,6 +50,13 @@ router.post("/", protectAdmin, (req, res) => {
 // DELETE /api/categories/:id - Delete category (Admin)
 router.delete("/:id", protectAdmin, async (req, res) => {
   try {
+    const linkedProduct = db.findOne("products", (product) => product.category?.toLowerCase() === req.params.id.toLowerCase());
+    if (linkedProduct) {
+      return res.status(409).json({
+        success: false,
+        message: "Move or delete products in this category before deleting it.",
+      });
+    }
     const removed = await db.removePersisted("categories", req.params.id);
     if (!removed) {
       return res.status(404).json({ success: false, message: "Category not found" });

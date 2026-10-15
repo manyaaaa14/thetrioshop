@@ -23,7 +23,7 @@ export default function AdminCoupons({ ctx }) {
         setCoupons(res.coupons);
       }
     } catch (err) {
-      console.warn("Using fallback coupons");
+      if (ctx?.showToast) ctx.showToast(err.message || "Unable to load coupons", "warn");
     }
   }
 
@@ -60,7 +60,7 @@ export default function AdminCoupons({ ctx }) {
   async function handleDeleteCoupon(id) {
     if (!window.confirm("Are you sure you want to delete this coupon?")) return;
     try {
-      await api.coupons.delete(id);
+      await api.coupons.remove(id);
       setCoupons((prev) => prev.filter((x) => x.id !== id));
       if (ctx?.showToast) ctx.showToast("Coupon deleted", "check");
     } catch (err) {
@@ -127,6 +127,17 @@ export default function AdminCoupons({ ctx }) {
                 style={{ width: "100%", border: "1px solid #D1D5DB", borderRadius: 6, padding: "8px 10px", fontSize: 13 }}
               />
             </div>
+            {type === "pct" && (
+              <div>
+                <div style={{ fontSize: 11.5, fontWeight: 600, color: "#4B5563", marginBottom: 3 }}>Maximum Discount (₹)</div>
+                <input
+                  value={maxDiscount}
+                  onChange={(e) => setMaxDiscount(e.target.value.replace(/\D/g, ""))}
+                  placeholder="Optional cap"
+                  style={{ width: "100%", border: "1px solid #D1D5DB", borderRadius: 6, padding: "8px 10px", fontSize: 13 }}
+                />
+              </div>
+            )}
           </div>
 
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 4 }}>

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { X, Lock, Mail, User, Phone, ShieldCheck } from "lucide-react";
 import Input from "./common/Input";
 import { api } from "../services/api";
-import { createUserWithEmailAndPassword, sendEmailVerification, signInWithEmailAndPassword, signOut, updateProfile } from "firebase/auth";
+import { createUserWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail, signInWithEmailAndPassword, signOut, updateProfile } from "firebase/auth";
 import { firebaseAuth, hasFirebaseConfig, isFirebaseConfigured } from "../lib/firebase";
 
 // Shared login/signup modal for customer and admin login.
@@ -14,6 +14,42 @@ export default function AuthModal({ type, onClose, ctx }) {
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", phone: "", password: "" });
   const [error, setError] = useState("");
+  const [resetNotice, setResetNotice] = useState("");
+
+  async function submitPasswordReset(e) {
+    e?.preventDefault();
+    setError("");
+    setResetNotice("");
+
+    const email = form.email.trim();
+    if (!email) {
+      setError("Please enter your email address.");
+      return;
+    }
+    if (!isFirebaseConfigured || !firebaseAuth) {
+      setError("Password reset email is not configured. Please contact store support.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await api.auth.requestPasswordReset(email);
+      await sendPasswordResetEmail(firebaseAuth, email);
+      setResetNotice("If an account exists for this email, a password reset link has been sent.");
+    } catch (err) {
+      if (err.code === "auth/invalid-email") {
+        setError("Please enter a valid email address.");
+      } else if (err.code === "auth/too-many-requests") {
+        setError("Too many reset attempts. Please wait a few minutes and try again.");
+      } else if (err.code === "auth/user-not-found") {
+        setResetNotice("If an account exists for this email, a password reset link has been sent.");
+      } else {
+        setError(err.message || "Unable to send a password reset email. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function submitUser(e) {
     e?.preventDefault();
@@ -48,6 +84,7 @@ export default function AuthModal({ type, onClose, ctx }) {
             });
           }
         } else {
+          await api.auth.checkLogin(form.email);
           try {
             credential = await signInWithEmailAndPassword(firebaseAuth, form.email, form.password);
           } catch (firebaseError) {
@@ -160,10 +197,10 @@ export default function AuthModal({ type, onClose, ctx }) {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
           <div>
             <div style={{ fontWeight: 800, fontSize: 20, color: "#111827" }}>
-              {type === "admin" ? "Admin Sign In" : mode === "login" ? "Sign In to Your Account" : "Create an Account"}
+              {type === "admin" ? "Admin Sign In" : mode === "login" ? "Sign In to Your Account" : mode === "signup" ? "Create an Account" : "Reset Your Password"}
             </div>
             <div style={{ fontSize: 12.5, color: "#6B7280", marginTop: 2 }}>
-              {type === "admin" ? "Access store management and inventory" : mode === "login" ? "Enter your credentials to continue" : "Join BLORA to start shopping"}
+              {type === "admin" ? "Access store management and inventory" : mode === "login" ? "Enter your credentials to continue" : mode === "signup" ? "Join BLORA to start shopping" : "Enter your email and we’ll send you a reset link"}
             </div>
           </div>
           <button onClick={onClose} style={{ border: "none", background: "#F3F4F6", width: 32, height: 32, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#666" }}>
@@ -174,6 +211,11 @@ export default function AuthModal({ type, onClose, ctx }) {
         {error && (
           <div style={{ background: "#FEF2F2", border: "1px solid #F87171", color: "#DC2626", padding: "9px 12px", borderRadius: 8, fontSize: 12.5, marginBottom: 14 }}>
             {error}
+          </div>
+        )}
+        {resetNotice && (
+          <div role="status" style={{ background: "#F0FDF4", border: "1px solid #86EFAC", color: "#15803D", padding: "9px 12px", borderRadius: 8, fontSize: 12.5, marginBottom: 14 }}>
+            {resetNotice}
           </div>
         )}
 
@@ -187,7 +229,7 @@ export default function AuthModal({ type, onClose, ctx }) {
             </button>
           </form>
         ) : (
-          <form onSubmit={submitUser} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <form onSubmit={mode === "forgot" ? submitPasswordReset : submitUser} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {mode === "signup" && (
               <Input label="Full Name*" value={form.name} onChange={(v) => setForm((f) => ({ ...f, name: v }))} full placeholder="e.g. Aarav Sharma" />
             )}
@@ -195,15 +237,27 @@ export default function AuthModal({ type, onClose, ctx }) {
             {mode === "signup" && (
               <Input label="Phone Number" value={form.phone} onChange={(v) => setForm((f) => ({ ...f, phone: v.replace(/\D/g,"") }))} maxLength={10} full placeholder="10-digit mobile number" />
             )}
-            <Input label="Password*" type="password" value={form.password} onChange={(v) => setForm((f) => ({ ...f, password: v }))} full placeholder="••••••••" />
+            {mode !== "forgot" && (
+              <Input label="Password*" type="password" value={form.password} onChange={(v) => setForm((f) => ({ ...f, password: v }))} full placeholder="••••••••" />
+            )}
+
+            {mode === "login" && (
+              <button
+                type="button"
+                onClick={() => { setMode("forgot"); setError(""); setResetNotice(""); }}
+                style={{ alignSelf: "flex-end", border: "none", background: "none", padding: 0, color: "#7C3AED", fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}
+              >
+                Forgot password?
+              </button>
+            )}
 
             <button type="submit" disabled={loading} style={{ background: "linear-gradient(90deg,#7C3AED,#DB2777)", color: "white", border: "none", padding: "12px 0", borderRadius: 10, fontWeight: 700, fontSize: 14, marginTop: 6, cursor: "pointer", opacity: loading ? 0.7 : 1 }}>
-              {loading ? "Please wait…" : mode === "login" ? "Sign In" : "Create Account"}
+              {loading ? "Please wait…" : mode === "login" ? "Sign In" : mode === "signup" ? "Create Account" : "Send Reset Link"}
             </button>
 
             <div style={{ textAlign: "center", fontSize: 13, color: "#6B7280", marginTop: 4 }}>
-              {mode === "login" ? "Don't have an account yet?" : "Already have an account?"}{" "}
-              <a onClick={() => { setMode(mode === "login" ? "signup" : "login"); setError(""); }} style={{ color: "#7C3AED", fontWeight: 700, cursor: "pointer", textDecoration: "underline" }}>
+              {mode === "forgot" ? "Remembered your password?" : mode === "login" ? "Don't have an account yet?" : "Already have an account?"}{" "}
+              <a onClick={() => { setMode(mode === "login" ? "signup" : "login"); setError(""); setResetNotice(""); }} style={{ color: "#7C3AED", fontWeight: 700, cursor: "pointer", textDecoration: "underline" }}>
                 {mode === "login" ? "Sign up free" : "Sign in here"}
               </a>
             </div>

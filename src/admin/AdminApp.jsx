@@ -17,7 +17,7 @@ import { GLOBAL_CSS } from "../styles/globalStyles";
 // Root shell for the admin dashboard: sidebar nav + routes to each admin section.
 
 export default function AdminApp({ ctx }) {
-  const { view, goto, setIsAdmin, showToast } = ctx;
+  const { view, goto, logout, showToast } = ctx;
   const page = view.page.replace("admin-", "") || "dashboard";
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -47,7 +47,7 @@ export default function AdminApp({ ctx }) {
           </a>
         ))}
         <div style={{ borderTop: "1px solid #333", marginTop: 14, paddingTop: 14 }}>
-          <a onClick={() => { setIsAdmin(false); goto("home"); showToast("Logged out of admin", "check"); }} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 10px", borderRadius: 8, fontSize: 13, fontWeight: 600, color: "#f87171" }}>
+          <a onClick={logout} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 10px", borderRadius: 8, fontSize: 13, fontWeight: 600, color: "#f87171" }}>
             <LogOut size={16} /> Logout
           </a>
         </div>
@@ -66,7 +66,7 @@ export default function AdminApp({ ctx }) {
           {page === "orders" && <AdminOrders ctx={ctx} />}
           {page === "customers" && <AdminCustomers ctx={ctx} />}
           {page === "inventory" && <AdminInventory ctx={ctx} />}
-          {page === "coupons" && <AdminCoupons />}
+          {page === "coupons" && <AdminCoupons ctx={ctx} />}
           {page === "reviews" && <AdminReviews />}
           {page === "content" && <AdminContent ctx={ctx} />}
         </div>

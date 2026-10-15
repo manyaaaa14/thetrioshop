@@ -1,7 +1,6 @@
 import jwt from "jsonwebtoken";
 import { db } from "../db/db.js";
-
-const JWT_SECRET = process.env.JWT_SECRET || "the_trio_shop_super_secret_jwt_key_2026_secure";
+import { JWT_SECRET } from "../config/auth.js";
 
 export function protectUser(req, res, next) {
   let token;

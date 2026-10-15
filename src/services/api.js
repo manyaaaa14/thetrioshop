@@ -79,7 +79,9 @@ export const api = {
   auth: {
     hasToken() { return Boolean(getToken()); },
     async register(payload) { const data = await request("/auth/register", { method: "POST", body: JSON.stringify(payload) }); if (data.token) setToken(data.token); return data; },
+    async checkLogin(email) { return await request("/auth/login/check", { method: "POST", body: JSON.stringify({ email }) }); },
     async login(payload) { const data = await request("/auth/login", { method: "POST", body: JSON.stringify(payload) }); if (data.token) setToken(data.token); return data; },
+    async requestPasswordReset(email) { return await request("/auth/password-reset/request", { method: "POST", body: JSON.stringify({ email }) }); },
     async firebaseSession(payload) { const data = await request("/auth/firebase-session", { method: "POST", body: JSON.stringify(payload) }); if (data.token) setToken(data.token); return data; },
     async adminLogin(payload) { const data = await request("/auth/admin-login", { method: "POST", body: JSON.stringify(payload) }); if (data.token) setToken(data.token); return data; },
     async me() { return await request("/auth/me"); },
@@ -156,7 +158,7 @@ export const api = {
   // POST   /api/coupons           DELETE /api/coupons/:id
   coupons: {
     async getAll() { return await request("/coupons"); },
-    async validate(code) { return await request("/coupons/validate", { method: "POST", body: JSON.stringify({ code }) }); },
+    async validate(code, subtotal) { return await request("/coupons/validate", { method: "POST", body: JSON.stringify({ code, subtotal }) }); },
     async create(payload) { return await request("/coupons", { method: "POST", body: JSON.stringify(payload) }); },
     async remove(id) { return await request("/coupons/" + id, { method: "DELETE" }); },
   },

@@ -4,11 +4,19 @@ import jwt from "jsonwebtoken";
 import { randomBytes } from "node:crypto";
 import { db } from "../db/db.js";
 import { protectUser } from "../middleware/auth.js";
+import { JWT_EXPIRES_IN, JWT_SECRET } from "../config/auth.js";
+import {
+  loginRequestLimiter,
+  passwordResetLimiter,
+  recordFailedLogin,
+  recordSuccessfulLogin,
+  rejectBusyLogin,
+  rejectLoginDuringCooldown,
+  runLoginAttempt,
+} from "../middleware/authProtection.js";
 import { getFirebaseAdminAuth } from "../services/firebaseAdmin.js";
 
 const router = express.Router();
-const JWT_SECRET = process.env.JWT_SECRET || "the_trio_shop_super_secret_jwt_key_2026_secure";
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
 
 function generateToken(user) {
   return jwt.sign(
@@ -19,7 +27,7 @@ function generateToken(user) {
 }
 
 // POST /api/auth/firebase-session
-router.post("/firebase-session", async (req, res, next) => {
+router.post("/firebase-session", loginRequestLimiter, async (req, res, next) => {
   try {
     const { idToken, name, phone } = req.body;
     if (!idToken) {
@@ -63,6 +71,9 @@ router.post("/firebase-session", async (req, res, next) => {
     const email = identity.email.trim().toLowerCase();
     let user = db.findOne("users", (entry) => entry.firebaseUid === identity.uid);
     const emailUser = db.findOne("users", (entry) => entry.email.toLowerCase() === email);
+    if (user?.role === "admin" || emailUser?.role === "admin") {
+      return res.status(403).json({ success: false, message: "Please use the admin sign-in portal." });
+    }
 
     if (!user && emailUser) {
       if (emailUser.firebaseUid && emailUser.firebaseUid !== identity.uid) {
@@ -94,6 +105,7 @@ router.post("/firebase-session", async (req, res, next) => {
     }
 
     const { password: _, ...safeUser } = user;
+    recordSuccessfulLogin(email);
     res.json({
       success: true,
       token: generateToken(user),
@@ -143,7 +155,16 @@ router.post("/register", async (req, res, next) => {
 });
 
 // POST /api/auth/login
-router.post("/login", async (req, res, next) => {
+router.post("/login/check", loginRequestLimiter, (req, res) => {
+  const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
+  if (!email) {
+    return res.status(400).json({ success: false, message: "Please provide an email address." });
+  }
+  if (rejectLoginDuringCooldown(email, res)) return;
+  return res.json({ success: true });
+});
+
+router.post("/login", loginRequestLimiter, async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
@@ -151,32 +172,41 @@ router.post("/login", async (req, res, next) => {
       return res.status(400).json({ success: false, message: "Please provide email and password." });
     }
 
-    const user = db.findOne("users", (u) => u.email.toLowerCase() === email.toLowerCase());
-    if (!user) {
-      return res.status(401).json({ success: false, message: "Invalid email or password." });
-    }
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const result = await runLoginAttempt(normalizedEmail, async () => {
+      if (rejectLoginDuringCooldown(normalizedEmail, res)) return;
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(401).json({ success: false, message: "Invalid email or password." });
-    }
+      const user = db.findOne("users", (u) => u.email.toLowerCase() === normalizedEmail);
+      if (!user || user.role === "admin") {
+        if (recordFailedLogin(normalizedEmail, res)) return;
+        return res.status(401).json({ success: false, message: "Invalid email or password." });
+      }
 
-    const token = generateToken(user);
-    const { password: _, ...safeUser } = user;
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) {
+        if (recordFailedLogin(normalizedEmail, res)) return;
+        return res.status(401).json({ success: false, message: "Invalid email or password." });
+      }
 
-    res.json({
-      success: true,
-      message: "Logged in successfully!",
-      token,
-      user: safeUser,
+      recordSuccessfulLogin(normalizedEmail);
+      const token = generateToken(user);
+      const { password: _, ...safeUser } = user;
+
+      return res.json({
+        success: true,
+        message: "Logged in successfully!",
+        token,
+        user: safeUser,
+      });
     });
+    if (result?.busy) rejectBusyLogin(res);
   } catch (err) {
     next(err);
   }
 });
 
 // POST /api/auth/admin-login
-router.post("/admin-login", async (req, res, next) => {
+router.post("/admin-login", loginRequestLimiter, async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
@@ -184,28 +214,50 @@ router.post("/admin-login", async (req, res, next) => {
       return res.status(400).json({ success: false, message: "Please provide admin credentials." });
     }
 
-    const user = db.findOne("users", (u) => u.email.toLowerCase() === email.toLowerCase());
-    if (!user || user.role !== "admin") {
-      return res.status(401).json({ success: false, message: "Invalid admin credentials or unauthorized." });
-    }
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const result = await runLoginAttempt(normalizedEmail, async () => {
+      if (rejectLoginDuringCooldown(normalizedEmail, res)) return;
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(401).json({ success: false, message: "Invalid admin credentials." });
-    }
+      const user = db.findOne("users", (u) => u.email.toLowerCase() === normalizedEmail);
+      if (!user || user.role !== "admin") {
+        if (recordFailedLogin(normalizedEmail, res)) return;
+        return res.status(401).json({ success: false, message: "Invalid admin credentials or unauthorized." });
+      }
 
-    const token = generateToken(user);
-    const { password: _, ...safeUser } = user;
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) {
+        if (recordFailedLogin(normalizedEmail, res)) return;
+        return res.status(401).json({ success: false, message: "Invalid admin credentials." });
+      }
 
-    res.json({
-      success: true,
-      message: "Admin authenticated successfully!",
-      token,
-      user: safeUser,
+      recordSuccessfulLogin(normalizedEmail);
+      const token = generateToken(user);
+      const { password: _, ...safeUser } = user;
+
+      return res.json({
+        success: true,
+        message: "Admin authenticated successfully!",
+        token,
+        user: safeUser,
+      });
     });
+    if (result?.busy) rejectBusyLogin(res);
   } catch (err) {
     next(err);
   }
+});
+
+// POST /api/auth/password-reset/request - Rate-limit reset requests before Firebase sends the email.
+router.post("/password-reset/request", passwordResetLimiter, (req, res) => {
+  const email = typeof req.body?.email === "string" ? req.body.email.trim() : "";
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({ success: false, message: "Please enter a valid email address." });
+  }
+
+  res.json({
+    success: true,
+    message: "If an account exists for this email, a password reset link will be sent.",
+  });
 });
 
 // GET /api/auth/me

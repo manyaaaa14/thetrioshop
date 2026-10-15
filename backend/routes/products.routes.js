@@ -88,17 +88,21 @@ router.get("/:id", (req, res) => {
 });
 
 // POST /api/products - Create product (Admin)
-router.post("/", protectAdmin, (req, res) => {
+router.post("/", protectAdmin, async (req, res) => {
   try {
     const { name, category, price, mrp, stock, desc, images, variants, badges } = req.body;
 
-    if (!name || price === undefined || !category) {
+    if (typeof name !== "string" || !name.trim() || price === undefined || !category) {
       return res.status(400).json({ success: false, message: "Name, category, and price are required." });
     }
+    const categoryId = String(category).toLowerCase().trim();
+    if (!db.findById("categories", categoryId)) {
+      return res.status(400).json({ success: false, message: "Select an existing product category." });
+    }
 
-    const newProduct = db.insert("products", {
+    const newProduct = await db.insertPersisted("products", {
       name: name.trim(),
-      category: category.toLowerCase().trim(),
+      category: categoryId,
       price: Number(price),
       mrp: Number(mrp) || Number(price),
       stock: Number(stock) || 0,
@@ -133,6 +137,12 @@ router.put("/:id", protectAdmin, (req, res) => {
     if (updates.price !== undefined) updates.price = Number(updates.price);
     if (updates.mrp !== undefined) updates.mrp = Number(updates.mrp);
     if (updates.stock !== undefined) updates.stock = Number(updates.stock);
+    if (updates.category !== undefined) {
+      updates.category = String(updates.category).toLowerCase().trim();
+      if (!db.findById("categories", updates.category)) {
+        return res.status(400).json({ success: false, message: "Select an existing product category." });
+      }
+    }
 
     const updated = db.update("products", req.params.id, updates);
 

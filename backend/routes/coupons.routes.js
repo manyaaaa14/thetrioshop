@@ -59,25 +59,34 @@ router.get("/", protectAdmin, (req, res) => {
 });
 
 // POST /api/coupons - Create coupon (Admin)
-router.post("/", protectAdmin, (req, res) => {
+router.post("/", protectAdmin, async (req, res) => {
   try {
     const { code, type, value, minOrder, maxDiscount } = req.body;
-    if (!code || !type || value === undefined) {
+    if (typeof code !== "string" || !code.trim() || !type || value === undefined) {
       return res.status(400).json({ success: false, message: "Code, type, and value are required." });
     }
 
     const upperCode = code.toUpperCase().trim();
+    const numericValue = Number(value);
+    const numericMinOrder = Number(minOrder) || 0;
+    const numericMaxDiscount = maxDiscount == null || maxDiscount === "" ? null : Number(maxDiscount);
+    if (!upperCode || !["flat", "pct"].includes(type) || !Number.isFinite(numericValue) ||
+      numericValue <= 0 || (type === "pct" && numericValue > 100) ||
+      !Number.isFinite(numericMinOrder) || numericMinOrder < 0 ||
+      (numericMaxDiscount !== null && (!Number.isFinite(numericMaxDiscount) || numericMaxDiscount <= 0))) {
+      return res.status(400).json({ success: false, message: "Enter a valid coupon code, discount, and minimum order." });
+    }
     const existing = db.findOne("coupons", (c) => c.code === upperCode);
     if (existing) {
       return res.status(400).json({ success: false, message: `Coupon ${upperCode} already exists.` });
     }
 
-    const newCoupon = db.insert("coupons", {
+    const newCoupon = await db.insertPersisted("coupons", {
       code: upperCode,
       type, // "flat" | "pct"
-      value: Number(value),
-      minOrder: Number(minOrder) || 0,
-      maxDiscount: maxDiscount ? Number(maxDiscount) : null,
+      value: numericValue,
+      minOrder: numericMinOrder,
+      maxDiscount: numericMaxDiscount,
       active: true,
     });
 
@@ -88,9 +97,9 @@ router.post("/", protectAdmin, (req, res) => {
 });
 
 // DELETE /api/coupons/:id - Delete coupon (Admin)
-router.delete("/:id", protectAdmin, (req, res) => {
+router.delete("/:id", protectAdmin, async (req, res) => {
   try {
-    const removed = db.remove("coupons", req.params.id);
+    const removed = await db.removePersisted("coupons", req.params.id);
     if (!removed) {
       return res.status(404).json({ success: false, message: "Coupon not found" });
     }

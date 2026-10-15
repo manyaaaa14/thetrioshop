@@ -21,9 +21,11 @@ export default function AdminCategories({ ctx }) {
       const res = await api.categories.getAll();
       if (Array.isArray(res.categories)) {
         setCats(res.categories);
+        setCategories(res.categories);
       }
     } catch (err) {
       console.error("Unable to load categories:", err);
+      if (ctx?.showToast) ctx.showToast(err.message || "Unable to load categories", "warn");
     }
   }
 
@@ -40,7 +42,7 @@ export default function AdminCategories({ ctx }) {
       });
       if (res.category) {
         setCats((prev) => [...prev, res.category]);
-        setCategories((prev) => [...prev, res.category]);
+        setCategories((prev) => [...prev.filter((category) => category.id !== res.category.id), res.category]);
         setName("");
         setShowAdd(false);
         if (ctx?.showToast) ctx.showToast("Category created successfully! 🏷️", "check");

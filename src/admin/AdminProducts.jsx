@@ -1,6 +1,5 @@
-import React, { useState } from "react";
-import { PlusCircle, Edit3, Eye, EyeOff, Trash2, X, RefreshCw } from "lucide-react";
-import { CATEGORIES } from "../data/products";
+import React, { useEffect, useState } from "react";
+import { PlusCircle, Edit3, Eye, EyeOff, Trash2, X } from "lucide-react";
 import { money } from "../lib/format";
 import Input from "../components/common/Input";
 import { api } from "../services/api";
@@ -8,10 +7,27 @@ import { api } from "../services/api";
 const MAX_PRODUCT_IMAGE_SIZE = 2 * 1024 * 1024;
 
 export default function AdminProducts({ ctx }) {
-  const { products, setProducts, showToast, refreshCatalog } = ctx;
+  const { categories, showToast, refreshCatalog } = ctx;
+  const [products, setProducts] = useState([]);
   const [editing, setEditing] = useState(null); // product or "new"
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingProducts, setLoadingProducts] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    api.products.getAllAdmin()
+      .then((res) => {
+        if (!cancelled && Array.isArray(res.products)) setProducts(res.products);
+      })
+      .catch((err) => {
+        if (!cancelled) showToast(err.message || "Unable to load products", "warn");
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingProducts(false);
+      });
+    return () => { cancelled = true; };
+  }, []);
 
   const filtered = products.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()));
 
@@ -31,7 +47,7 @@ export default function AdminProducts({ ctx }) {
           showToast("Product created successfully! 🛍️", "check");
         }
       }
-      if (refreshCatalog) refreshCatalog();
+      if (refreshCatalog) await refreshCatalog();
       setEditing(null);
     } catch (err) {
       showToast(err.message || "Failed to save product", "warn");
@@ -46,7 +62,7 @@ export default function AdminProducts({ ctx }) {
       await api.products.remove(id);
       setProducts((prev) => prev.filter((p) => p.id !== id));
       showToast("Product deleted", "check");
-      if (refreshCatalog) refreshCatalog();
+      if (refreshCatalog) await refreshCatalog();
     } catch (err) {
       showToast(err.message || "Failed to delete product", "warn");
     }
@@ -61,6 +77,7 @@ export default function AdminProducts({ ctx }) {
       const res = await api.products.update(id, { badges: newBadges });
       if (res.product) {
         setProducts((prev) => prev.map((p) => (p.id === id ? res.product : p)));
+        if (refreshCatalog) await refreshCatalog();
       }
     } catch (err) {
       showToast("Failed to update badge", "warn");
@@ -75,6 +92,7 @@ export default function AdminProducts({ ctx }) {
       if (res.product) {
         setProducts((prev) => prev.map((p) => (p.id === id ? res.product : p)));
         showToast(res.product.hidden ? "Product hidden from store" : "Product now visible", "check");
+        if (refreshCatalog) await refreshCatalog();
       }
     } catch (err) {
       showToast("Failed to update visibility", "warn");
@@ -92,7 +110,9 @@ export default function AdminProducts({ ctx }) {
         />
         <button
           onClick={() => setEditing("new")}
-          style={{ background: "#7C3AED", color: "white", border: "none", borderRadius: 8, padding: "9px 18px", fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}
+          disabled={!categories.length || loading}
+          title={!categories.length ? "Create a category before adding products" : ""}
+          style={{ background: "#7C3AED", color: "white", border: "none", borderRadius: 8, padding: "9px 18px", fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", gap: 6, cursor: categories.length ? "pointer" : "not-allowed", opacity: categories.length ? 1 : 0.6 }}
         >
           <PlusCircle size={16} /> Add New Product
         </button>
@@ -108,7 +128,9 @@ export default function AdminProducts({ ctx }) {
             </tr>
           </thead>
           <tbody>
-            {filtered.length === 0 ? (
+            {loadingProducts ? (
+              <tr><td colSpan={8} style={{ textAlign: "center", padding: 24, color: "#6B7280" }}>Loading products…</td></tr>
+            ) : filtered.length === 0 ? (
               <tr>
                 <td colSpan={8} style={{ textAlign: "center", padding: 24, color: "#9CA3AF" }}>No products found</td>
               </tr>
@@ -119,7 +141,9 @@ export default function AdminProducts({ ctx }) {
                     <img src={p.images?.[0]} alt="" style={{ width: 34, height: 34, borderRadius: 6, objectFit: "cover", border: "1px solid #E5E7EB" }} />
                     <span style={{ fontWeight: 600, color: "#111827" }}>{p.name}</span>
                   </td>
-                  <td style={{ padding: "10px 12px", textTransform: "capitalize", color: "#6B7280" }}>{p.category}</td>
+                  <td style={{ padding: "10px 12px", color: "#6B7280" }}>
+                    {categories.find((category) => category.id === p.category)?.name || p.category}
+                  </td>
                   <td style={{ padding: "10px 12px", fontWeight: 700, color: "#111827" }}>{money(p.price)}</td>
                   <td style={{ padding: "10px 12px", color: "#9CA3AF", textDecoration: "line-through" }}>{money(p.mrp)}</td>
                   <td style={{ padding: "10px 12px", color: p.stock === 0 ? "#DC2626" : p.stock < 10 ? "#F59E0B" : "#16A34A", fontWeight: 700 }}>
@@ -177,6 +201,7 @@ export default function AdminProducts({ ctx }) {
       {editing && (
         <ProductEditModal
           product={editing === "new" ? null : editing}
+          categories={categories}
           onClose={() => setEditing(null)}
           onSave={saveProduct}
           loading={loading}
@@ -186,12 +211,12 @@ export default function AdminProducts({ ctx }) {
   );
 }
 
-function ProductEditModal({ product, onClose, onSave, loading }) {
+function ProductEditModal({ product, categories, onClose, onSave, loading }) {
   const [imageError, setImageError] = useState("");
   const [form, setForm] = useState(
     product || {
       name: "",
-      category: "jewellery",
+      category: categories[0]?.id || "",
       price: "",
       mrp: "",
       stock: "",
@@ -232,6 +257,18 @@ function ProductEditModal({ product, onClose, onSave, loading }) {
   }
 
   function save() {
+    if (!form.name.trim()) {
+      setImageError("Please enter a product name.");
+      return;
+    }
+    if (!categories.some((category) => category.id === form.category)) {
+      setImageError("Please select a valid product category.");
+      return;
+    }
+    if (!Number.isFinite(Number(form.price)) || Number(form.price) <= 0) {
+      setImageError("Please enter a selling price greater than zero.");
+      return;
+    }
     if (!form.images?.[0]) {
       setImageError("Please upload a product image.");
       return;
@@ -266,7 +303,7 @@ function ProductEditModal({ product, onClose, onSave, loading }) {
               onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
               style={{ width: "100%", border: "1px solid #D1D5DB", borderRadius: 8, padding: "9px 10px", fontSize: 13 }}
             >
-              {CATEGORIES.map((c) => (
+              {categories.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
