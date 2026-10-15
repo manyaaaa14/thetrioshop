@@ -15,6 +15,7 @@ import {
   runLoginAttempt,
 } from "../middleware/authProtection.js";
 import { getFirebaseAdminAuth } from "../services/firebaseAdmin.js";
+import { verifyAndUpgradePassword } from "../services/password.js";
 
 const router = express.Router();
 
@@ -182,10 +183,14 @@ router.post("/login", loginRequestLimiter, async (req, res, next) => {
         return res.status(401).json({ success: false, message: "Invalid email or password." });
       }
 
-      const isMatch = await bcrypt.compare(password, user.password);
-      if (!isMatch) {
+      const passwordCheck = await verifyAndUpgradePassword(password, user.password);
+      if (!passwordCheck.valid) {
         if (recordFailedLogin(normalizedEmail, res)) return;
         return res.status(401).json({ success: false, message: "Invalid email or password." });
+      }
+
+      if (passwordCheck.upgradedHash) {
+        db.update("users", user.id, { password: passwordCheck.upgradedHash });
       }
 
       recordSuccessfulLogin(normalizedEmail);
@@ -224,10 +229,14 @@ router.post("/admin-login", loginRequestLimiter, async (req, res, next) => {
         return res.status(401).json({ success: false, message: "Invalid admin credentials or unauthorized." });
       }
 
-      const isMatch = await bcrypt.compare(password, user.password);
-      if (!isMatch) {
+      const passwordCheck = await verifyAndUpgradePassword(password, user.password);
+      if (!passwordCheck.valid) {
         if (recordFailedLogin(normalizedEmail, res)) return;
         return res.status(401).json({ success: false, message: "Invalid admin credentials." });
+      }
+
+      if (passwordCheck.upgradedHash) {
+        db.update("users", user.id, { password: passwordCheck.upgradedHash });
       }
 
       recordSuccessfulLogin(normalizedEmail);

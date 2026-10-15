@@ -174,7 +174,6 @@ export default function AuthModal({ type, onClose, ctx }) {
       if (res.user) {
         setUser(res.user);
         setIsAdmin(true);
-        await refreshAuthSession();
         showToast("Welcome back, Administrator 🛡️", "check");
         onClose();
         goto("admin-dashboard");
