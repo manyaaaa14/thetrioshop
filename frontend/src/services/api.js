@@ -20,11 +20,11 @@ function getApiBase() {
       return "/api";
     }
   }
-  return "https://thetrioshop-oazb.onrender.com/api";
+  return "https://bloraa.onrender.com/api";
 }
 
 const API_BASE = getApiBase();
-const PROD_API_FALLBACK = "https://thetrioshop-oazb.onrender.com/api";
+const PROD_API_FALLBACK = "https://bloraa.onrender.com/api";
 
 function getToken() {
   try { return localStorage.getItem('trio_jwt_token') || null; } catch (e) { return null; }
@@ -77,8 +77,14 @@ async function request(
 
 export const api = {
   auth: {
+    hasToken() { return Boolean(getToken()); },
     async register(payload) { const data = await request('/auth/register', { method: 'POST', body: JSON.stringify(payload) }); if (data.token) setToken(data.token); return data; },
+    async checkLogin(email) { return await request('/auth/login/check', { method: 'POST', body: JSON.stringify({ email }) }); },
     async login(payload) { const data = await request('/auth/login', { method: 'POST', body: JSON.stringify(payload) }); if (data.token) setToken(data.token); return data; },
+    async requestPasswordReset(email) { return await request('/auth/password-reset/request', { method: 'POST', body: JSON.stringify({ email }) }); },
+    async verifyPasswordResetCode(payload) { return await request('/auth/password-reset/verify', { method: 'POST', body: JSON.stringify(payload) }); },
+    async confirmPasswordReset(payload) { const data = await request('/auth/password-reset/confirm', { method: 'POST', body: JSON.stringify(payload) }); if (data.token) setToken(data.token); return data; },
+    async firebaseSession(payload) { const data = await request('/auth/firebase-session', { method: 'POST', body: JSON.stringify(payload) }); if (data.token) setToken(data.token); return data; },
     async adminLogin(payload) { const data = await request('/auth/admin-login', { method: 'POST', body: JSON.stringify(payload) }); if (data.token) setToken(data.token); return data; },
     async me() { return await request('/auth/me'); },
     async updateProfile(updates) { return await request('/auth/profile', { method: 'PUT', body: JSON.stringify(updates) }); },

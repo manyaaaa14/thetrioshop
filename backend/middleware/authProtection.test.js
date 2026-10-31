@@ -82,3 +82,22 @@ test("password reset requests are limited by both email and source address", () 
   assert.equal(sourceLimited.response.statusCode, 429);
   assert.ok(sourceLimited.response.headers["Retry-After"]);
 });
+
+test("tracks remaining attempts accurately and supports custom maxFailures", () => {
+  const tracker = new LoginAttemptTracker({ maxFailures: 3 });
+  assert.equal(tracker.getRemainingAttempts("custom@example.com"), 3);
+
+  tracker.fail("custom@example.com");
+  assert.equal(tracker.getRemainingAttempts("custom@example.com"), 2);
+
+  tracker.fail("custom@example.com");
+  assert.equal(tracker.getRemainingAttempts("custom@example.com"), 1);
+
+  const cooldown = tracker.fail("custom@example.com");
+  assert.ok(cooldown > 0);
+  assert.equal(tracker.getRemainingAttempts("custom@example.com"), 0);
+
+  tracker.success("custom@example.com");
+  assert.equal(tracker.getRemainingAttempts("custom@example.com"), 3);
+});
+

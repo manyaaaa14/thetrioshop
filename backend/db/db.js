@@ -120,9 +120,15 @@ class UnifiedDatabase {
       if (!fs.existsSync(DATA_DIR)) {
         fs.mkdirSync(DATA_DIR, { recursive: true });
       }
+      const serialized = JSON.stringify(this.data, null, 2);
       const tempPath = STORE_PATH + ".tmp";
-      fs.writeFileSync(tempPath, JSON.stringify(this.data, null, 2), "utf-8");
-      fs.renameSync(tempPath, STORE_PATH);
+      try {
+        fs.writeFileSync(tempPath, serialized, "utf-8");
+        fs.renameSync(tempPath, STORE_PATH);
+      } catch (renameErr) {
+        fs.writeFileSync(STORE_PATH, serialized, "utf-8");
+        try { fs.unlinkSync(tempPath); } catch {}
+      }
       return true;
     } catch (err) {
       console.error("Error saving database to disk:", err);

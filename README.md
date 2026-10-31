@@ -62,7 +62,7 @@ The app uses Firebase Authentication for customer email/password sign-in and kee
    VITE_FIREBASE_APP_ID=
    ```
 3. Set `FIREBASE_PROJECT_ID` to the Firebase project ID in the backend process's `.env` file (the repository-root `.env` when running `npm run dev`, or `backend/.env` when starting the backend from its own folder). Only the project ID is needed to verify Firebase ID tokens; no service-account private key is required. The variable name is listed in `backend/.env.example`.
-4. For deployment, add the six `VITE_FIREBASE_*` Web config variables to Netlify's environment variables and `FIREBASE_PROJECT_ID` to the Render service environment. Local `.env` files are not deployed.
+4. For deployment, add the six `VITE_FIREBASE_*` Web config variables to Netlify's environment variables and `FIREBASE_PROJECT_ID` to the backend Render service (`bloraa.onrender.com`). Local `.env` files are not deployed.
 5. Restart both the Vite frontend and backend after setting the variables.
 
 The Firebase Web configuration is public client configuration; the service-account private key must never be exposed to the frontend or committed. If the Web configuration is omitted, the existing backend email/password authentication remains active. Existing customer accounts can be linked after signing in with a verified Firebase email; admin authentication is unchanged.

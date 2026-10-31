@@ -1,6 +1,6 @@
-const MAX_FAILED_LOGINS = 5;
-const FAILED_LOGIN_WINDOW_MS = 15 * 60 * 1000;
-const LOGIN_COOLDOWN_MS = 15 * 60 * 1000;
+const DEFAULT_MAX_FAILED_LOGINS = 5;
+const DEFAULT_FAILED_LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const DEFAULT_LOGIN_COOLDOWN_MS = 15 * 60 * 1000;
 const RATE_LIMIT_CLEANUP_INTERVAL = 256;
 const MAX_CONCURRENT_EMAIL_ATTEMPTS = 5;
 
@@ -23,7 +23,14 @@ function sendRateLimit(res, retryAfterMs, message) {
 }
 
 export class LoginAttemptTracker {
-  constructor() {
+  constructor(options = {}) {
+    const envMax = Number(process.env.LOGIN_MAX_FAILED_ATTEMPTS);
+    const envLockoutMin = Number(process.env.LOGIN_LOCKOUT_MINUTES);
+    const envWindowMin = Number(process.env.LOGIN_WINDOW_MINUTES);
+
+    this.maxFailures = options.maxFailures || (Number.isFinite(envMax) && envMax > 0 ? envMax : DEFAULT_MAX_FAILED_LOGINS);
+    this.windowMs = options.windowMs || (Number.isFinite(envWindowMin) && envWindowMin > 0 ? envWindowMin * 60 * 1000 : DEFAULT_FAILED_LOGIN_WINDOW_MS);
+    this.cooldownMs = options.cooldownMs || (Number.isFinite(envLockoutMin) && envLockoutMin > 0 ? envLockoutMin * 60 * 1000 : DEFAULT_LOGIN_COOLDOWN_MS);
     this.attempts = new Map();
     this.inProgress = new Map();
     this.waiting = new Map();
@@ -34,7 +41,7 @@ export class LoginAttemptTracker {
     this.checks += 1;
     if (this.checks % RATE_LIMIT_CLEANUP_INTERVAL === 0) {
       for (const [storedEmail, state] of this.attempts) {
-        if (state.lockedUntil <= now && now - state.windowStartedAt >= FAILED_LOGIN_WINDOW_MS) {
+        if (state.lockedUntil <= now && now - state.windowStartedAt >= this.windowMs) {
           this.attempts.delete(storedEmail);
         }
       }
@@ -45,7 +52,7 @@ export class LoginAttemptTracker {
     if (!state) return 0;
 
     if (state.lockedUntil > now) return state.lockedUntil - now;
-    if (state.lockedUntil || now - state.windowStartedAt >= FAILED_LOGIN_WINDOW_MS) {
+    if (state.lockedUntil || now - state.windowStartedAt >= this.windowMs) {
       this.attempts.delete(key);
     }
     return 0;
@@ -57,16 +64,32 @@ export class LoginAttemptTracker {
     if (remainingMs) return remainingMs;
 
     const current = this.attempts.get(key);
-    const state = current && now - current.windowStartedAt < FAILED_LOGIN_WINDOW_MS
+    const state = current && now - current.windowStartedAt < this.windowMs
       ? current
       : { failures: 0, windowStartedAt: now, lockedUntil: 0 };
 
     state.failures += 1;
-    if (state.failures >= MAX_FAILED_LOGINS) {
-      state.lockedUntil = now + LOGIN_COOLDOWN_MS;
+    if (state.failures >= this.maxFailures) {
+      state.lockedUntil = now + this.cooldownMs;
     }
     this.attempts.set(key, state);
     return state.lockedUntil > now ? state.lockedUntil - now : 0;
+  }
+
+  getRemainingAttempts(email, now = Date.now()) {
+    const key = normalizeEmail(email);
+    const remainingMs = this.check(key, now);
+    if (remainingMs) return 0;
+
+    const current = this.attempts.get(key);
+    if (!current || now - current.windowStartedAt >= this.windowMs) {
+      return this.maxFailures;
+    }
+    return Math.max(0, this.maxFailures - current.failures);
+  }
+
+  getMaxAttempts() {
+    return this.maxFailures;
   }
 
   success(email) {
@@ -132,7 +155,7 @@ function createRateLimiter({ key, limit, windowMs, message }) {
 
 export const loginRequestLimiter = createRateLimiter({
   key: (req) => clientAddress(req),
-  limit: 30,
+  limit: Number(process.env.LOGIN_IP_RATE_LIMIT) || 30,
   windowMs: 60 * 1000,
   message: "Too many sign-in requests from this connection. Please wait a minute and try again.",
 });

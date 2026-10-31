@@ -6,6 +6,7 @@ import { db } from "../db/db.js";
 import { protectUser } from "../middleware/auth.js";
 import { JWT_EXPIRES_IN, JWT_SECRET } from "../config/auth.js";
 import {
+  loginAttemptTracker,
   loginRequestLimiter,
   passwordResetLimiter,
   recordFailedLogin,
@@ -18,6 +19,17 @@ import { getFirebaseAdminAuth } from "../services/firebaseAdmin.js";
 import { verifyAndUpgradePassword } from "../services/password.js";
 
 const router = express.Router();
+
+function normalizeEmail(email) {
+  return typeof email === "string" ? email.trim().toLowerCase() : "";
+}
+
+function findUserByEmail(email) {
+  const normalizedEmail = normalizeEmail(email);
+  if (!normalizedEmail) return null;
+
+  return db.findOne("users", (user) => typeof user?.email === "string" && user.email.toLowerCase() === normalizedEmail);
+}
 
 function generateToken(user) {
   return jwt.sign(
@@ -69,9 +81,9 @@ router.post("/firebase-session", loginRequestLimiter, async (req, res, next) => 
       return res.status(401).json({ success: false, message: "Firebase account must have an email address." });
     }
 
-    const email = identity.email.trim().toLowerCase();
+    const email = normalizeEmail(identity.email);
     let user = db.findOne("users", (entry) => entry.firebaseUid === identity.uid);
-    const emailUser = db.findOne("users", (entry) => entry.email.toLowerCase() === email);
+    const emailUser = findUserByEmail(email);
     if (user?.role === "admin" || emailUser?.role === "admin") {
       return res.status(403).json({ success: false, message: "Please use the admin sign-in portal." });
     }
@@ -126,7 +138,8 @@ router.post("/register", async (req, res, next) => {
       return res.status(400).json({ success: false, message: "Please provide name, email, and password." });
     }
 
-    const existing = db.findOne("users", (u) => u.email.toLowerCase() === email.toLowerCase());
+    const normalizedEmail = normalizeEmail(email);
+    const existing = findUserByEmail(normalizedEmail);
     if (existing) {
       return res.status(400).json({ success: false, message: "An account with this email already exists." });
     }
@@ -134,7 +147,7 @@ router.post("/register", async (req, res, next) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = db.insert("users", {
       name: name.trim(),
-      email: email.toLowerCase().trim(),
+      email: normalizedEmail,
       password: hashedPassword,
       phone: phone || "",
       role: "user",
@@ -173,20 +186,38 @@ router.post("/login", loginRequestLimiter, async (req, res, next) => {
       return res.status(400).json({ success: false, message: "Please provide email and password." });
     }
 
-    const normalizedEmail = String(email).trim().toLowerCase();
+    const normalizedEmail = normalizeEmail(email);
     const result = await runLoginAttempt(normalizedEmail, async () => {
       if (rejectLoginDuringCooldown(normalizedEmail, res)) return;
 
-      const user = db.findOne("users", (u) => u.email.toLowerCase() === normalizedEmail);
+      const user = findUserByEmail(normalizedEmail);
       if (!user || user.role === "admin") {
         if (recordFailedLogin(normalizedEmail, res)) return;
-        return res.status(401).json({ success: false, message: "Invalid email or password." });
+        const remainingAttempts = loginAttemptTracker.getRemainingAttempts(normalizedEmail);
+        const warning = remainingAttempts <= 3
+          ? ` (${remainingAttempts} attempt${remainingAttempts === 1 ? "" : "s"} remaining)`
+          : "";
+        return res.status(401).json({
+          success: false,
+          message: `Invalid email or password.${warning}`,
+          remainingAttempts,
+          maxAttempts: loginAttemptTracker.getMaxAttempts(),
+        });
       }
 
       const passwordCheck = await verifyAndUpgradePassword(password, user.password);
       if (!passwordCheck.valid) {
         if (recordFailedLogin(normalizedEmail, res)) return;
-        return res.status(401).json({ success: false, message: "Invalid email or password." });
+        const remainingAttempts = loginAttemptTracker.getRemainingAttempts(normalizedEmail);
+        const warning = remainingAttempts <= 3
+          ? ` (${remainingAttempts} attempt${remainingAttempts === 1 ? "" : "s"} remaining)`
+          : "";
+        return res.status(401).json({
+          success: false,
+          message: `Invalid email or password.${warning}`,
+          remainingAttempts,
+          maxAttempts: loginAttemptTracker.getMaxAttempts(),
+        });
       }
 
       if (passwordCheck.upgradedHash) {
@@ -219,20 +250,38 @@ router.post("/admin-login", loginRequestLimiter, async (req, res, next) => {
       return res.status(400).json({ success: false, message: "Please provide admin credentials." });
     }
 
-    const normalizedEmail = String(email).trim().toLowerCase();
+    const normalizedEmail = normalizeEmail(email);
     const result = await runLoginAttempt(normalizedEmail, async () => {
       if (rejectLoginDuringCooldown(normalizedEmail, res)) return;
 
-      const user = db.findOne("users", (u) => u.email.toLowerCase() === normalizedEmail);
+      const user = findUserByEmail(normalizedEmail);
       if (!user || user.role !== "admin") {
         if (recordFailedLogin(normalizedEmail, res)) return;
-        return res.status(401).json({ success: false, message: "Invalid admin credentials or unauthorized." });
+        const remainingAttempts = loginAttemptTracker.getRemainingAttempts(normalizedEmail);
+        const warning = remainingAttempts <= 3
+          ? ` (${remainingAttempts} attempt${remainingAttempts === 1 ? "" : "s"} remaining)`
+          : "";
+        return res.status(401).json({
+          success: false,
+          message: `Invalid admin credentials or unauthorized.${warning}`,
+          remainingAttempts,
+          maxAttempts: loginAttemptTracker.getMaxAttempts(),
+        });
       }
 
       const passwordCheck = await verifyAndUpgradePassword(password, user.password);
       if (!passwordCheck.valid) {
         if (recordFailedLogin(normalizedEmail, res)) return;
-        return res.status(401).json({ success: false, message: "Invalid admin credentials." });
+        const remainingAttempts = loginAttemptTracker.getRemainingAttempts(normalizedEmail);
+        const warning = remainingAttempts <= 3
+          ? ` (${remainingAttempts} attempt${remainingAttempts === 1 ? "" : "s"} remaining)`
+          : "";
+        return res.status(401).json({
+          success: false,
+          message: `Invalid admin credentials.${warning}`,
+          remainingAttempts,
+          maxAttempts: loginAttemptTracker.getMaxAttempts(),
+        });
       }
 
       if (passwordCheck.upgradedHash) {
@@ -256,17 +305,128 @@ router.post("/admin-login", loginRequestLimiter, async (req, res, next) => {
   }
 });
 
-// POST /api/auth/password-reset/request - Rate-limit reset requests before Firebase sends the email.
-router.post("/password-reset/request", passwordResetLimiter, (req, res) => {
-  const email = typeof req.body?.email === "string" ? req.body.email.trim() : "";
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return res.status(400).json({ success: false, message: "Please enter a valid email address." });
+// POST /api/auth/password-reset/request - Rate-limit reset requests & generate secure reset code
+router.post("/password-reset/request", passwordResetLimiter, async (req, res, next) => {
+  try {
+    const rawEmail = typeof req.body?.email === "string" ? req.body.email.trim() : "";
+    if (!rawEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rawEmail)) {
+      return res.status(400).json({ success: false, message: "Please enter a valid email address." });
+    }
+
+    const email = normalizeEmail(rawEmail);
+    const user = findUserByEmail(email);
+
+    let resetCode = null;
+    if (user) {
+      resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+      db.update("users", user.id, {
+        resetPasswordCode: resetCode,
+        resetPasswordExpires: expiresAt,
+      });
+      console.log(`[AUTH] Generated password reset code for ${email}: ${resetCode} (valid 15m)`);
+    }
+
+    const payload = {
+      success: true,
+      message: "If an account exists for this email, a 6-digit reset code has been sent.",
+    };
+
+    if (resetCode) {
+      payload.devResetCode = resetCode;
+    }
+
+    return res.json(payload);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/auth/password-reset/verify - Verify reset code before setting new password
+router.post("/password-reset/verify", passwordResetLimiter, (req, res) => {
+  const email = normalizeEmail(req.body?.email);
+  const code = String(req.body?.code || "").trim();
+
+  if (!email || !code) {
+    return res.status(400).json({ success: false, message: "Please provide email and the 6-digit reset code." });
   }
 
-  res.json({
-    success: true,
-    message: "If an account exists for this email, a password reset link will be sent.",
-  });
+  const user = findUserByEmail(email);
+  if (!user || !user.resetPasswordCode) {
+    return res.status(400).json({ success: false, message: "Invalid or expired reset code." });
+  }
+
+  if (user.resetPasswordCode !== code) {
+    return res.status(400).json({ success: false, message: "Incorrect reset code. Please check and try again." });
+  }
+
+  if (user.resetPasswordExpires && new Date(user.resetPasswordExpires).getTime() < Date.now()) {
+    return res.status(400).json({ success: false, message: "Reset code has expired. Please request a new one." });
+  }
+
+  return res.json({ success: true, message: "Reset code verified." });
+});
+
+// POST /api/auth/password-reset/confirm - Set new password with verified reset code
+router.post("/password-reset/confirm", passwordResetLimiter, async (req, res, next) => {
+  try {
+    const email = normalizeEmail(req.body?.email);
+    const code = String(req.body?.code || "").trim();
+    const newPassword = String(req.body?.newPassword || "").trim();
+
+    if (!email || !code || !newPassword) {
+      return res.status(400).json({ success: false, message: "Email, reset code, and new password are required." });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ success: false, message: "New password must be at least 6 characters long." });
+    }
+
+    const user = findUserByEmail(email);
+    if (!user || !user.resetPasswordCode) {
+      return res.status(400).json({ success: false, message: "Invalid or expired reset request. Please request a new code." });
+    }
+
+    if (user.resetPasswordCode !== code) {
+      return res.status(400).json({ success: false, message: "Incorrect reset code. Please check and try again." });
+    }
+
+    if (user.resetPasswordExpires && new Date(user.resetPasswordExpires).getTime() < Date.now()) {
+      return res.status(400).json({ success: false, message: "Reset code has expired. Please request a new code." });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const updatedUser = db.update("users", user.id, {
+      password: hashedPassword,
+      resetPasswordCode: null,
+      resetPasswordExpires: null,
+    });
+
+    recordSuccessfulLogin(email);
+
+    if (user.firebaseUid) {
+      try {
+        const firebaseAuth = await getFirebaseAdminAuth();
+        if (firebaseAuth) {
+          await firebaseAuth.updateUser(user.firebaseUid, { password: newPassword });
+        }
+      } catch (fbErr) {
+        console.warn("Could not sync updated password to Firebase Admin:", fbErr.message);
+      }
+    }
+
+    const token = generateToken(updatedUser);
+    const { password: _, ...safeUser } = updatedUser;
+
+    return res.json({
+      success: true,
+      message: "Password reset successfully! You are now signed in.",
+      token,
+      user: safeUser,
+    });
+  } catch (err) {
+    next(err);
+  }
 });
 
 // GET /api/auth/me
