@@ -95,14 +95,17 @@ router.post("/", protectAdmin, async (req, res) => {
     if (typeof name !== "string" || !name.trim() || price === undefined || !category) {
       return res.status(400).json({ success: false, message: "Name, category, and price are required." });
     }
-    const categoryId = String(category).toLowerCase().trim();
-    if (!db.findById("categories", categoryId)) {
+    const categoryQuery = String(category).toLowerCase().trim();
+    const matchedCategory = db.findOne("categories", (c) =>
+      c.id.toLowerCase() === categoryQuery || (c.name || "").toLowerCase() === categoryQuery
+    );
+    if (!matchedCategory) {
       return res.status(400).json({ success: false, message: "Select an existing product category." });
     }
 
     const newProduct = await db.insertPersisted("products", {
       name: name.trim(),
-      category: categoryId,
+      category: matchedCategory.id,
       price: Number(price),
       mrp: Number(mrp) || Number(price),
       stock: Number(stock) || 0,
@@ -125,6 +128,18 @@ router.post("/", protectAdmin, async (req, res) => {
   }
 });
 
+// DELETE /api/products/admin/all/clear - Clear all products (Admin)
+router.delete("/admin/all/clear", protectAdmin, async (req, res) => {
+  try {
+    const products = db.getCollection("products");
+    products.length = 0;
+    db.persist();
+    res.json({ success: true, message: "All products cleared successfully!" });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 // PUT /api/products/:id - Update product (Admin)
 router.put("/:id", protectAdmin, (req, res) => {
   try {
@@ -138,10 +153,14 @@ router.put("/:id", protectAdmin, (req, res) => {
     if (updates.mrp !== undefined) updates.mrp = Number(updates.mrp);
     if (updates.stock !== undefined) updates.stock = Number(updates.stock);
     if (updates.category !== undefined) {
-      updates.category = String(updates.category).toLowerCase().trim();
-      if (!db.findById("categories", updates.category)) {
+      const catQuery = String(updates.category).toLowerCase().trim();
+      const matchedCategory = db.findOne("categories", (c) =>
+        c.id.toLowerCase() === catQuery || (c.name || "").toLowerCase() === catQuery
+      );
+      if (!matchedCategory) {
         return res.status(400).json({ success: false, message: "Select an existing product category." });
       }
+      updates.category = matchedCategory.id;
     }
 
     const updated = db.update("products", req.params.id, updates);

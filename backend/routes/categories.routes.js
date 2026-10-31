@@ -47,6 +47,27 @@ router.post("/", protectAdmin, async (req, res) => {
   }
 });
 
+// PUT /api/categories/:id - Update category (Admin)
+router.put("/:id", protectAdmin, async (req, res) => {
+  try {
+    const category = db.findById("categories", req.params.id);
+    if (!category) {
+      return res.status(404).json({ success: false, message: "Category not found" });
+    }
+
+    const { name, emoji, color } = req.body;
+    const updates = {};
+    if (typeof name === "string" && name.trim()) updates.name = name.trim();
+    if (emoji) updates.emoji = emoji;
+    if (color) updates.color = color;
+
+    const updated = db.update("categories", req.params.id, updates);
+    res.json({ success: true, message: "Category updated successfully!", category: updated });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 // DELETE /api/categories/:id - Delete category (Admin)
 router.delete("/:id", protectAdmin, async (req, res) => {
   try {
