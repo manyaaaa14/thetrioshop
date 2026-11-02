@@ -14,8 +14,7 @@ function getApiBase() {
       host === "0.0.0.0" ||
       host.startsWith("192.168.") ||
       host.startsWith("10.") ||
-      host.endsWith(".local") ||
-      host.endsWith(".netlify.app")
+      host.endsWith(".local")
     ) {
       return "/api";
     }
