@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { PRODUCTS, CATEGORIES, BANNERS, DEFAULT_ANNOUNCEMENT } from "./data/products";
+import { BANNERS, DEFAULT_ANNOUNCEMENT } from "./data/products";
 import { loadState, saveState } from "./lib/storage";
 import { uid } from "./lib/format";
 import { GLOBAL_CSS } from "./styles/globalStyles";
@@ -39,8 +39,8 @@ export default function TrioShopApp() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
 
-  const [products, setProducts] = useState(PRODUCTS);
-  const [categories, setCategories] = useState(CATEGORIES);
+  const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [banners, setBanners] = useState(BANNERS);
   const [announcement, setAnnouncement] = useState(DEFAULT_ANNOUNCEMENT);
   const [cart, setCart] = useState({}); // id -> {qty, color}
@@ -340,7 +340,7 @@ export default function TrioShopApp() {
   }
 
   const ctx = {
-    view, goto, products, setProducts, categories, banners, announcement, cart, wishlist, orders, setOrders,
+    view, goto, products, setProducts, categories, setCategories, banners, announcement, cart, wishlist, orders, setOrders,
     user, setUser, isAdmin, setIsAdmin, addToCart, updateCartQty, removeFromCart, toggleWishlist,
     placeOrder, updateOrderStatus, cancelOrder, refreshCatalog, refreshOrders, refreshAuthSession, logout,
     showToast, filters, setFilters, searchQuery, setSearchQuery, loading, setLoading,

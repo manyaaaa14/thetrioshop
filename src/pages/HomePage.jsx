@@ -94,7 +94,7 @@ export default function HomePage({ ctx }) {
         {activeCategories.map((c) => (
           <div key={c.id} onClick={() => goto("category", { categoryId: c.id })} style={{ flexShrink: 0, width: 96, textAlign: "center", cursor: "pointer" }}>
             <div style={{ width: 80, height: 80, borderRadius: "50%", background: c.color || "#F3E8FF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, margin: "0 auto 6px", transition: "transform .2s", boxShadow: "0 2px 8px rgba(0,0,0,.04)" }} className="cat-circle">
-              {c.emoji || "✨"}
+              {c.image ? <img src={c.image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : c.emoji || "✨"}
             </div>
             <div style={{ fontSize: 12.5, fontWeight: 700, color: "#1F2937" }}>{c.name}</div>
           </div>

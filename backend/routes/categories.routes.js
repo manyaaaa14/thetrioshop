@@ -3,6 +3,20 @@ import { db } from "../db/db.js";
 import { protectAdmin } from "../middleware/auth.js";
 
 const router = express.Router();
+const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
+
+function isValidCategoryImage(image) {
+  if (image === undefined || image === "") return true;
+  if (typeof image !== "string") return false;
+  if (/^https?:\/\/\S+$/i.test(image)) return true;
+  const match = image.match(/^data:image\/(?:png|jpe?g|gif|webp);base64,([a-z0-9+/]+=*)$/i);
+  return Boolean(match && Buffer.from(match[1], "base64").length <= MAX_IMAGE_BYTES);
+}
+
+function isValidCategoryMetadata({ emoji, color }) {
+  return (emoji === undefined || (typeof emoji === "string" && emoji.length <= 8)) &&
+    (color === undefined || (typeof color === "string" && /^#[0-9a-f]{6}$/i.test(color)));
+}
 
 // GET /api/categories - All categories
 router.get("/", (req, res) => {
@@ -17,9 +31,12 @@ router.get("/", (req, res) => {
 // POST /api/categories - Create category (Admin)
 router.post("/", protectAdmin, async (req, res) => {
   try {
-    const { name, emoji, color } = req.body;
+    const { name, emoji, color, image } = req.body;
     if (typeof name !== "string" || !name.trim()) {
       return res.status(400).json({ success: false, message: "Category name is required" });
+    }
+    if (name.trim().length > 80 || !isValidCategoryImage(image) || !isValidCategoryMetadata({ emoji, color })) {
+      return res.status(400).json({ success: false, message: "Category name must be 80 characters or fewer and its image must be a valid image up to 2 MB." });
     }
 
     const normalizedName = name.trim();
@@ -39,6 +56,7 @@ router.post("/", protectAdmin, async (req, res) => {
       name: normalizedName,
       emoji: emoji || "✨",
       color: color || "#F3E8FF",
+      image: image || "",
     });
 
     res.status(201).json({ success: true, category: newCategory });
@@ -55,13 +73,32 @@ router.put("/:id", protectAdmin, async (req, res) => {
       return res.status(404).json({ success: false, message: "Category not found" });
     }
 
-    const { name, emoji, color } = req.body;
+    const { name, emoji, color, image } = req.body;
     const updates = {};
-    if (typeof name === "string" && name.trim()) updates.name = name.trim();
+    if (!isValidCategoryMetadata({ emoji, color })) {
+      return res.status(400).json({ success: false, message: "Category icon or color is invalid." });
+    }
+    if (name !== undefined) {
+      if (typeof name !== "string" || !name.trim() || name.trim().length > 80) {
+        return res.status(400).json({ success: false, message: "Category name must be between 1 and 80 characters." });
+      }
+      const duplicate = db.findOne("categories", (item) =>
+        item.id !== req.params.id && (item.name || "").toLowerCase() === name.trim().toLowerCase()
+      );
+      if (duplicate) return res.status(409).json({ success: false, message: "A category with this name already exists." });
+      updates.name = name.trim();
+    }
     if (emoji) updates.emoji = emoji;
     if (color) updates.color = color;
+    if (image !== undefined) {
+      if (!isValidCategoryImage(image)) {
+        return res.status(400).json({ success: false, message: "Category image must be a valid image up to 2 MB." });
+      }
+      updates.image = image;
+    }
 
-    const updated = db.update("categories", req.params.id, updates);
+    const updated = await db.updatePersisted("categories", req.params.id, updates);
+    if (!updated) return res.status(404).json({ success: false, message: "Category not found" });
     res.json({ success: true, message: "Category updated successfully!", category: updated });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -71,7 +108,15 @@ router.put("/:id", protectAdmin, async (req, res) => {
 // DELETE /api/categories/:id - Delete category (Admin)
 router.delete("/:id", protectAdmin, async (req, res) => {
   try {
-    const linkedProduct = db.findOne("products", (product) => product.category?.toLowerCase() === req.params.id.toLowerCase());
+    const categoryId = req.params.id.toLowerCase();
+    const category = db.findById("categories", req.params.id);
+    if (!category) {
+      return res.status(404).json({ success: false, message: "Category not found" });
+    }
+    const linkedProduct = db.findOne("products", (product) =>
+      product.category?.toLowerCase() === categoryId ||
+      product.category?.toLowerCase() === category.name.toLowerCase()
+    );
     if (linkedProduct) {
       return res.status(409).json({
         success: false,

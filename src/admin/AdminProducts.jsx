@@ -5,11 +5,19 @@ import Input from "../components/common/Input";
 import { api } from "../services/api";
 
 const MAX_PRODUCT_IMAGE_SIZE = 2 * 1024 * 1024;
+const MAX_PRODUCT_IMAGES = 8;
+const MAX_PRODUCT_IMAGES_TOTAL_SIZE = 10 * 1024 * 1024;
 
-export default function AdminProducts({ ctx }) {
+function storedImageSize(image) {
+  if (!image?.startsWith("data:image/")) return 0;
+  const encoded = image.slice(image.indexOf(",") + 1);
+  return Math.floor(encoded.length * 3 / 4);
+}
+
+export default function AdminProducts({ ctx, initialCreate = false }) {
   const { categories, showToast, refreshCatalog } = ctx;
   const [products, setProducts] = useState([]);
-  const [editing, setEditing] = useState(null); // product or "new"
+  const [editing, setEditing] = useState(null);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingProducts, setLoadingProducts] = useState(true);
@@ -28,6 +36,10 @@ export default function AdminProducts({ ctx }) {
       });
     return () => { cancelled = true; };
   }, []);
+
+  useEffect(() => {
+    if (initialCreate && categories.length) setEditing("new");
+  }, [initialCreate, categories]);
 
   const filtered = products.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()));
 
@@ -122,7 +134,7 @@ export default function AdminProducts({ ctx }) {
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5, minWidth: 780 }}>
           <thead>
             <tr style={{ background: "#F9FAFB", textAlign: "left", borderBottom: "1px solid #E5E7EB" }}>
-              {["Product", "Category", "Price", "MRP", "Stock", "Badges", "Store Status", "Actions"].map((h) => (
+              {["Product", "Category", "Price", "Stock", "Availability", "Badges", "Store Status", "Actions"].map((h) => (
                 <th key={h} style={{ padding: "10px 12px", fontWeight: 700, color: "#4B5563" }}>{h}</th>
               ))}
             </tr>
@@ -145,9 +157,11 @@ export default function AdminProducts({ ctx }) {
                     {categories.find((category) => category.id === p.category)?.name || p.category}
                   </td>
                   <td style={{ padding: "10px 12px", fontWeight: 700, color: "#111827" }}>{money(p.price)}</td>
-                  <td style={{ padding: "10px 12px", color: "#9CA3AF", textDecoration: "line-through" }}>{money(p.mrp)}</td>
                   <td style={{ padding: "10px 12px", color: p.stock === 0 ? "#DC2626" : p.stock < 10 ? "#F59E0B" : "#16A34A", fontWeight: 700 }}>
                     {p.stock === 0 ? "Out of Stock (0)" : `${p.stock} units`}
+                  </td>
+                  <td style={{ padding: "10px 12px", color: p.stock > 0 ? "#16A34A" : "#DC2626", fontWeight: 700 }}>
+                    {p.stock > 0 ? "In Stock" : "Out of Stock"}
                   </td>
                   <td style={{ padding: "10px 12px" }}>
                     <div style={{ display: "flex", gap: 4 }}>
@@ -214,12 +228,20 @@ export default function AdminProducts({ ctx }) {
 function ProductEditModal({ product, categories, onClose, onSave, loading }) {
   const [imageError, setImageError] = useState("");
   const [form, setForm] = useState(
-    product || {
+    product ? {
+      ...product,
+      productPrice: String(product.mrp ?? product.price ?? ""),
+      discountPrice: product.discountPrice != null
+        ? String(product.discountPrice)
+        : product.mrp > product.price ? String(product.price) : "",
+      stock: String(product.stock ?? 0),
+      images: product.images || [],
+    } : {
       name: "",
       category: categories[0]?.id || "",
-      price: "",
-      mrp: "",
-      stock: "",
+      productPrice: "",
+      discountPrice: "",
+      stock: "0",
       desc: "",
       images: [],
       badges: [],
@@ -229,31 +251,46 @@ function ProductEditModal({ product, categories, onClose, onSave, loading }) {
     }
   );
 
-  function selectImage(event) {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  function readImage(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => typeof reader.result === "string"
+        ? resolve(reader.result)
+        : reject(new Error("Unable to read an image. Please try another file."));
+      reader.onerror = () => reject(new Error("Unable to read an image. Please try again."));
+      reader.readAsDataURL(file);
+    });
+  }
 
-    if (!file.type.startsWith("image/")) {
-      setImageError("Choose an image file.");
-      return;
-    }
-    if (file.size > MAX_PRODUCT_IMAGE_SIZE) {
-      setImageError("Image must be 2 MB or smaller.");
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result !== "string") {
-        setImageError("Unable to read this image. Please try another file.");
-        return;
-      }
-      setForm((current) => ({ ...current, images: [reader.result] }));
-      setImageError("");
-    };
-    reader.onerror = () => setImageError("Unable to read this image. Please try again.");
-    reader.readAsDataURL(file);
+  async function selectImages(event) {
+    const files = Array.from(event.target.files || []);
     event.target.value = "";
+    if (!files.length) return;
+    if (files.some((file) => !file.type.startsWith("image/"))) {
+      setImageError("Choose image files only.");
+      return;
+    }
+    if (files.some((file) => file.size > MAX_PRODUCT_IMAGE_SIZE)) {
+      setImageError("Each image must be 2 MB or smaller.");
+      return;
+    }
+    const totalSize = form.images.reduce((size, image) => size + storedImageSize(image), 0) +
+      files.reduce((size, file) => size + file.size, 0);
+    if (totalSize > MAX_PRODUCT_IMAGES_TOTAL_SIZE) {
+      setImageError("Product images must be 10 MB or smaller in total.");
+      return;
+    }
+    if (form.images.length + files.length > MAX_PRODUCT_IMAGES) {
+      setImageError(`A product can have up to ${MAX_PRODUCT_IMAGES} images.`);
+      return;
+    }
+    try {
+      const uploadedImages = await Promise.all(files.map(readImage));
+      setForm((current) => ({ ...current, images: [...current.images, ...uploadedImages] }));
+      setImageError("");
+    } catch (error) {
+      setImageError(error.message);
+    }
   }
 
   function save() {
@@ -265,8 +302,17 @@ function ProductEditModal({ product, categories, onClose, onSave, loading }) {
       setImageError("Please select a valid product category.");
       return;
     }
-    if (!Number.isFinite(Number(form.price)) || Number(form.price) <= 0) {
-      setImageError("Please enter a selling price greater than zero.");
+    if (!Number.isFinite(Number(form.productPrice)) || Number(form.productPrice) <= 0) {
+      setImageError("Please enter a product price greater than zero.");
+      return;
+    }
+    if (form.discountPrice && (!Number.isFinite(Number(form.discountPrice)) ||
+      Number(form.discountPrice) <= 0 || Number(form.discountPrice) >= Number(form.productPrice))) {
+      setImageError("The discount price must be greater than zero and lower than the product price.");
+      return;
+    }
+    if (!Number.isInteger(Number(form.stock)) || Number(form.stock) < 0) {
+      setImageError("Stock quantity must be a non-negative whole number.");
       return;
     }
     if (!form.images?.[0]) {
@@ -275,10 +321,16 @@ function ProductEditModal({ product, categories, onClose, onSave, loading }) {
     }
 
     onSave({
-      ...form,
-      price: Number(form.price),
-      mrp: Number(form.mrp) || Number(form.price),
+      id: product?.id,
+      name: form.name.trim(),
+      category: form.category,
+      price: Number(form.discountPrice || form.productPrice),
+      mrp: Number(form.productPrice),
+      discountPrice: form.discountPrice ? Number(form.discountPrice) : null,
       stock: Number(form.stock),
+      desc: form.desc || "",
+      images: form.images,
+      badges: form.badges || [],
       variants: form.variants || { size: [], color: [] },
     });
   }
@@ -292,6 +344,7 @@ function ProductEditModal({ product, categories, onClose, onSave, loading }) {
             <X size={15} />
           </button>
         </div>
+        {imageError && <div role="alert" style={{ color: "#DC2626", fontSize: 12, marginBottom: 12 }}>{imageError}</div>}
 
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <Input label="Product Name*" value={form.name} onChange={(v) => setForm((f) => ({ ...f, name: v }))} full placeholder="e.g. Handmade Silver Choker" />
@@ -310,19 +363,36 @@ function ProductEditModal({ product, categories, onClose, onSave, loading }) {
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            <Input label="Selling Price (₹)*" value={form.price} onChange={(v) => setForm((f) => ({ ...f, price: v.replace(/\D/g, "") }))} placeholder="e.g. 499" />
-            <Input label="MRP (₹)*" value={form.mrp} onChange={(v) => setForm((f) => ({ ...f, mrp: v.replace(/\D/g, "") }))} placeholder="e.g. 999" />
+            <Input label="Product Price (₹)*" value={form.productPrice} onChange={(v) => setForm((f) => ({ ...f, productPrice: v.replace(/\D/g, "") }))} placeholder="e.g. 999" />
+            <Input label="Discount Price (₹)" value={form.discountPrice} onChange={(v) => setForm((f) => ({ ...f, discountPrice: v.replace(/\D/g, "") }))} placeholder="Optional" />
           </div>
 
           <Input label="Stock Quantity (Units)*" value={form.stock} onChange={(v) => setForm((f) => ({ ...f, stock: v.replace(/\D/g, "") }))} full placeholder="e.g. 50" />
+          <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#4B5563" }}>
+            Product Availability
+            <select
+              value={Number(form.stock) > 0 ? "in-stock" : "out-of-stock"}
+              onChange={(event) => setForm((current) => ({ ...current, stock: event.target.value === "out-of-stock" ? "0" : Number(current.stock) > 0 ? current.stock : "1" }))}
+              style={{ display: "block", width: "100%", marginTop: 5, border: "1px solid #D1D5DB", borderRadius: 8, padding: "9px 10px", fontSize: 13, background: "white" }}
+            >
+              <option value="in-stock">In Stock</option>
+              <option value="out-of-stock">Out of Stock</option>
+            </select>
+          </label>
           <div>
-            <label htmlFor="product-image" style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 6, color: "#4B5563" }}>Product Image*</label>
-            <input id="product-image" type="file" accept="image/*" onChange={selectImage} style={{ width: "100%", border: "1px solid #D1D5DB", borderRadius: 8, padding: 8, fontSize: 13 }} />
-            <div style={{ fontSize: 11, color: "#6B7280", marginTop: 4 }}>Choose an image file (max 2 MB).</div>
-            {form.images?.[0] && (
-              <img src={form.images[0]} alt="Product preview" style={{ display: "block", width: 120, height: 120, objectFit: "cover", borderRadius: 8, border: "1px solid #E5E7EB", marginTop: 8 }} />
-            )}
-            {imageError && <div role="alert" style={{ color: "#DC2626", fontSize: 12, marginTop: 4 }}>{imageError}</div>}
+            <label htmlFor="product-images" style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 6, color: "#4B5563" }}>Product Images*</label>
+            <input id="product-images" type="file" accept="image/*" multiple onChange={selectImages} style={{ width: "100%", border: "1px solid #D1D5DB", borderRadius: 8, padding: 8, fontSize: 13 }} />
+            <div style={{ fontSize: 11, color: "#6B7280", marginTop: 4 }}>Upload up to {MAX_PRODUCT_IMAGES} images, 2 MB each.</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+              {form.images.map((image, index) => (
+                <div key={`${index}-${image.slice(0, 24)}`} style={{ position: "relative" }}>
+                  <img src={image} alt={`Product preview ${index + 1}`} style={{ width: 76, height: 76, objectFit: "cover", borderRadius: 8, border: "1px solid #E5E7EB" }} />
+                  <button type="button" aria-label={`Remove image ${index + 1}`} onClick={() => setForm((current) => ({ ...current, images: current.images.filter((_, imageIndex) => imageIndex !== index) }))} style={{ position: "absolute", top: 2, right: 2, border: 0, borderRadius: "50%", background: "white", color: "#DC2626", cursor: "pointer", padding: 3 }}>
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
           
           <div>

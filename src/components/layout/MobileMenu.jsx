@@ -1,10 +1,9 @@
 import React from "react";
 import { X, User, ShoppingBag, Heart, Package, Info, PhoneCall } from "lucide-react";
-import { CATEGORIES } from "../../data/products";
 
 export default function MobileMenu({ ctx, setMenuOpen, setAuthModal }) {
   const { goto, user, isAdmin, setIsAdmin, setUser, categories } = ctx;
-  const activeCategories = categories || CATEGORIES;
+  const activeCategories = categories;
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 100, display: "flex" }}>

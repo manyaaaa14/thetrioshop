@@ -3,6 +3,34 @@ import { db } from "../db/db.js";
 import { protectAdmin } from "../middleware/auth.js";
 
 const router = express.Router();
+const MAX_IMAGES = 8;
+const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
+const MAX_TOTAL_IMAGE_BYTES = 10 * 1024 * 1024;
+
+function isValidImage(image) {
+  if (typeof image !== "string" || !image.trim()) return false;
+  if (/^https?:\/\/\S+$/i.test(image)) return true;
+  const match = image.match(/^data:image\/(?:png|jpe?g|gif|webp);base64,([a-z0-9+/]+=*)$/i);
+  return Boolean(match && Buffer.from(match[1], "base64").length <= MAX_IMAGE_BYTES);
+}
+
+function validateProductImages(images) {
+  return Array.isArray(images) &&
+    images.length > 0 &&
+    images.length <= MAX_IMAGES &&
+    images.every(isValidImage) &&
+    images.reduce((total, image) => {
+      if (!image.startsWith("data:image/")) return total;
+      return total + Buffer.from(image.slice(image.indexOf(",") + 1), "base64").length;
+    }, 0) <= MAX_TOTAL_IMAGE_BYTES;
+}
+
+function findCategory(category) {
+  const categoryQuery = String(category || "").toLowerCase().trim();
+  return db.findOne("categories", (item) =>
+    item.id.toLowerCase() === categoryQuery || (item.name || "").toLowerCase() === categoryQuery
+  );
+}
 
 // GET /api/products - Get all products with search, filtering & sorting
 router.get("/", (req, res) => {
@@ -90,32 +118,49 @@ router.get("/:id", (req, res) => {
 // POST /api/products - Create product (Admin)
 router.post("/", protectAdmin, async (req, res) => {
   try {
-    const { name, category, price, mrp, stock, desc, images, variants, badges } = req.body;
+    const { name, category, price, mrp, discountPrice, stock, desc, description, images, variants, badges, hidden } = req.body;
+    const numericPrice = Number(price);
+    const numericMrp = mrp === undefined || mrp === "" ? numericPrice : Number(mrp);
+    const numericDiscountPrice = discountPrice === undefined || discountPrice === null || discountPrice === ""
+      ? null
+      : Number(discountPrice);
+    const numericStock = Number(stock);
 
-    if (typeof name !== "string" || !name.trim() || price === undefined || !category) {
-      return res.status(400).json({ success: false, message: "Name, category, and price are required." });
+    if (typeof name !== "string" || !name.trim() || !category ||
+      !Number.isFinite(numericPrice) || numericPrice <= 0 ||
+      !Number.isFinite(numericMrp) || numericMrp < numericPrice ||
+      (numericDiscountPrice !== null && (!Number.isFinite(numericDiscountPrice) ||
+        numericDiscountPrice <= 0 || numericDiscountPrice >= numericMrp || numericDiscountPrice !== numericPrice)) ||
+      !Number.isInteger(numericStock) || numericStock < 0 ||
+      typeof (desc ?? description ?? "") !== "string") {
+      return res.status(400).json({ success: false, message: "Enter a product name, valid category, price, discount price, description, and non-negative whole-number stock quantity." });
     }
-    const categoryQuery = String(category).toLowerCase().trim();
-    const matchedCategory = db.findOne("categories", (c) =>
-      c.id.toLowerCase() === categoryQuery || (c.name || "").toLowerCase() === categoryQuery
-    );
+    const matchedCategory = findCategory(category);
     if (!matchedCategory) {
       return res.status(400).json({ success: false, message: "Select an existing product category." });
+    }
+    if (!validateProductImages(images)) {
+      return res.status(400).json({ success: false, message: `Upload between 1 and ${MAX_IMAGES} valid product images. Each image must be 2 MB or smaller.` });
+    }
+    if (badges !== undefined && (!Array.isArray(badges) || badges.some((badge) => typeof badge !== "string"))) {
+      return res.status(400).json({ success: false, message: "Product badges must be a list of text values." });
     }
 
     const newProduct = await db.insertPersisted("products", {
       name: name.trim(),
       category: matchedCategory.id,
-      price: Number(price),
-      mrp: Number(mrp) || Number(price),
-      stock: Number(stock) || 0,
-      desc: desc || "",
-      images: Array.isArray(images) && images.length > 0 ? images : ["https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=600"],
+      price: numericPrice,
+      mrp: numericMrp,
+      discountPrice: numericDiscountPrice,
+      stock: numericStock,
+      desc: (desc ?? description ?? "").trim(),
+      description: (desc ?? description ?? "").trim(),
+      images,
       variants: variants || { size: [], color: [] },
       badges: badges || [],
       rating: 4.5,
       ratingCount: 1,
-      hidden: false,
+      hidden: Boolean(hidden),
     });
 
     res.status(201).json({
@@ -141,7 +186,7 @@ router.delete("/admin/all/clear", protectAdmin, async (req, res) => {
 });
 
 // PUT /api/products/:id - Update product (Admin)
-router.put("/:id", protectAdmin, (req, res) => {
+router.put("/:id", protectAdmin, async (req, res) => {
   try {
     const product = db.findById("products", req.params.id);
     if (!product) {
@@ -149,21 +194,81 @@ router.put("/:id", protectAdmin, (req, res) => {
     }
 
     const updates = { ...req.body };
-    if (updates.price !== undefined) updates.price = Number(updates.price);
-    if (updates.mrp !== undefined) updates.mrp = Number(updates.mrp);
-    if (updates.stock !== undefined) updates.stock = Number(updates.stock);
+    const allowedFields = new Set([
+      "name", "category", "price", "mrp", "discountPrice", "stock",
+      "desc", "description", "images", "variants", "badges", "hidden",
+    ]);
+    const unsupportedField = Object.keys(updates).find((field) => !allowedFields.has(field));
+    if (unsupportedField) {
+      return res.status(400).json({ success: false, message: `Unsupported product field: ${unsupportedField}.` });
+    }
+    for (const field of ["name", "desc", "description"]) {
+      if (updates[field] !== undefined && typeof updates[field] !== "string") {
+        return res.status(400).json({ success: false, message: `${field} must be text.` });
+      }
+    }
+    if (updates.name !== undefined) {
+      updates.name = updates.name.trim();
+      if (!updates.name) return res.status(400).json({ success: false, message: "Product name is required." });
+    }
+    if (updates.price !== undefined) {
+      updates.price = Number(updates.price);
+      if (!Number.isFinite(updates.price) || updates.price <= 0) {
+        return res.status(400).json({ success: false, message: "Product price must be greater than zero." });
+      }
+    }
+    if (updates.mrp !== undefined) {
+      updates.mrp = Number(updates.mrp);
+      if (!Number.isFinite(updates.mrp) || updates.mrp <= 0) {
+        return res.status(400).json({ success: false, message: "Product price must be greater than zero." });
+      }
+    }
+    if (updates.discountPrice !== undefined && updates.discountPrice !== null && updates.discountPrice !== "") {
+      updates.discountPrice = Number(updates.discountPrice);
+      if (updates.price === undefined) updates.price = updates.discountPrice;
+      if (!Number.isFinite(updates.discountPrice) || updates.discountPrice <= 0 ||
+        updates.discountPrice >= (updates.mrp ?? product.mrp) ||
+        (updates.price !== undefined && updates.discountPrice !== updates.price)) {
+        return res.status(400).json({ success: false, message: "Discount price must be lower than the product price and match the selling price." });
+      }
+    } else if (updates.discountPrice === "" || updates.discountPrice === null) {
+      updates.discountPrice = null;
+      const productPrice = updates.mrp ?? product.mrp;
+      if (updates.price !== undefined && Number(updates.price) !== Number(productPrice)) {
+        return res.status(400).json({ success: false, message: "A product without a discount must use its product price." });
+      }
+      updates.price = Number(productPrice);
+    }
+    if (updates.stock !== undefined) {
+      updates.stock = Number(updates.stock);
+      if (!Number.isInteger(updates.stock) || updates.stock < 0) {
+        return res.status(400).json({ success: false, message: "Stock quantity must be a non-negative whole number." });
+      }
+    }
+    if ((updates.mrp ?? product.mrp) < (updates.price ?? product.price)) {
+      return res.status(400).json({ success: false, message: "Discount price cannot be lower than the selling price." });
+    }
+    if (updates.images !== undefined && !validateProductImages(updates.images)) {
+      return res.status(400).json({ success: false, message: `Upload between 1 and ${MAX_IMAGES} valid product images. Each image must be 2 MB or smaller.` });
+    }
+    if (updates.badges !== undefined && (!Array.isArray(updates.badges) || updates.badges.some((badge) => typeof badge !== "string"))) {
+      return res.status(400).json({ success: false, message: "Product badges must be a list of text values." });
+    }
+    if (updates.hidden !== undefined && typeof updates.hidden !== "boolean") {
+      return res.status(400).json({ success: false, message: "Product visibility must be true or false." });
+    }
     if (updates.category !== undefined) {
-      const catQuery = String(updates.category).toLowerCase().trim();
-      const matchedCategory = db.findOne("categories", (c) =>
-        c.id.toLowerCase() === catQuery || (c.name || "").toLowerCase() === catQuery
-      );
+      const matchedCategory = findCategory(updates.category);
       if (!matchedCategory) {
         return res.status(400).json({ success: false, message: "Select an existing product category." });
       }
       updates.category = matchedCategory.id;
     }
 
-    const updated = db.update("products", req.params.id, updates);
+    if (updates.desc !== undefined) updates.description = updates.desc;
+    if (updates.description !== undefined && updates.desc === undefined) updates.desc = updates.description;
+    const updated = await db.updatePersisted("products", req.params.id, updates);
+    if (!updated) return res.status(404).json({ success: false, message: "Product not found" });
 
     res.json({
       success: true,

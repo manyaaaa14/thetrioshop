@@ -1,17 +1,20 @@
 import React, { useState, useMemo } from "react";
 import { Search, Heart, ShoppingCart, User, Menu, X } from "lucide-react";
-import { CATEGORIES } from "../../data/products";
 
 export default function Header({ ctx, menuOpen, setMenuOpen, setAuthModal, cartCount, wishlistCount }) {
   const { goto, user, isAdmin, searchQuery, setSearchQuery, products, categories, announcement } = ctx;
   const [localQ, setLocalQ] = useState(searchQuery);
-  const activeCategories = categories || CATEGORIES;
+  const activeCategories = categories;
 
   const suggestions = useMemo(() => {
     if (!localQ || localQ.length < 2) return [];
     const q = localQ.toLowerCase();
-    return products.filter((p) => !p.hidden && (p.name.toLowerCase().includes(q) || p.category.includes(q))).slice(0, 6);
-  }, [localQ, products]);
+    return products.filter((p) => !p.hidden && (
+      p.name.toLowerCase().includes(q) ||
+      p.category.toLowerCase().includes(q) ||
+      activeCategories.find((category) => category.id === p.category)?.name.toLowerCase().includes(q)
+    )).slice(0, 6);
+  }, [localQ, products, activeCategories]);
 
   return (
     <header style={{ position: "sticky", top: 0, zIndex: 40 }}>
@@ -48,7 +51,7 @@ export default function Header({ ctx, menuOpen, setMenuOpen, setAuthModal, cartC
                     goto("shop");
                   }
                 }}
-                placeholder="Search jewellery, bags, stickers, gifts…"
+                placeholder="Search products or categories…"
                 style={{ border: "none", outline: "none", background: "none", flex: 1, fontSize: 13.5 }}
               />
               {localQ && (
@@ -121,7 +124,7 @@ export default function Header({ ctx, menuOpen, setMenuOpen, setAuthModal, cartC
               {p === "home" ? "Home" : "Shop All Catalog"}
             </a>
           ))}
-          {activeCategories.slice(0, 6).map((c) => (
+          {activeCategories.map((c) => (
             <a
               key={c.id}
               onClick={() => goto("category", { categoryId: c.id })}

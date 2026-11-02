@@ -21,8 +21,8 @@ A complete, modern Meesho / Flipkart / Amazon–style full-stack e‑commerce pl
 ### 🛡️ Admin Dashboard (`/#admin` or Footer Link)
 - **Real-Time Analytics:** Total store revenue, total orders, active customer count, catalog product count, and low stock warnings.
 - **Sales Velocity Graph:** Visual weekly sales breakdown and best-selling product rankings.
-- **Product Management (CRUD):** Add products with image URLs, categories, MRP, selling price, badges (`bestseller`, `new`, `sale`), toggle store visibility, or delete products.
-- **Category Manager:** Add new categories with custom emoji and background color tint.
+- **Product Management (CRUD):** Create and edit products with multiple uploaded images, database-backed categories, product and optional discount prices, stock availability, badges, and visibility controls.
+- **Category Manager:** Create, edit, and delete database-backed categories with optional uploaded images. Categories immediately appear in product forms and the customer storefront; categories containing products cannot be deleted.
 - **Order Status Control:** View complete order histories, customer shipping addresses, ordered items, and advance statuses or cancel orders with stock restoration.
 - **Customer Directory:** Track registered customer accounts, order counts, and lifetime spend.
 - **Inventory Control:** Quick restock (`+20`) and real-time inventory quantity increments.
@@ -97,6 +97,7 @@ The Firebase Web configuration is public client configuration; the service-accou
 | `PATCH` | `/api/products/:id/stock` | Quick stock adjustment | Admin |
 | `GET` | `/api/categories` | List catalog categories | Public |
 | `POST` | `/api/categories` | Add new category | Admin |
+| `PUT` | `/api/categories/:id` | Update category name or image | Admin |
 | `DELETE` | `/api/categories/:id` | Delete category | Admin |
 | `POST` | `/api/orders` | Place verified order (auto-stock check) | Public / User |
 | `GET` | `/api/orders/my-orders` | Current user order history | User |
@@ -123,7 +124,7 @@ The Firebase Web configuration is public client configuration; the service-accou
 
 The backend uses a zero-configuration persistent JSON database (`backend/data/store.json`) with atomic file writes. It requires **no external database server installation** on Windows and starts immediately.
 
-To reseed the database at any time with fresh demo data:
+The product and category catalog is managed through the admin and is not populated from frontend fixtures. Running the seed command refreshes demo orders, coupons, banners, and reviews while preserving catalog data:
 ```bash
 npm run seed
 ```

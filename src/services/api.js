@@ -109,10 +109,12 @@ export const api = {
   // ─── CATEGORIES ──────────────────────────────────────────────────────────
   // GET    /api/categories
   // POST   /api/categories
+  // PUT    /api/categories/:id
   // DELETE /api/categories/:id
   categories: {
     async getAll() { return await request("/categories"); },
     async create(payload) { return await request("/categories", { method: "POST", body: JSON.stringify(payload) }); },
+    async update(id, payload) { return await request("/categories/" + id, { method: "PUT", body: JSON.stringify(payload) }); },
     async remove(id) { return await request("/categories/" + id, { method: "DELETE" }); },
   },
 

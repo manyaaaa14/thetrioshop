@@ -64,7 +64,7 @@ app.use(cors({
   origin: "*",
   credentials: true,
 }));
-app.use(express.json({ limit: "4mb" }));
+app.use(express.json({ limit: "24mb" }));
 
 // Request logger
 app.use((req, res, next) => {

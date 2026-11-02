@@ -222,6 +222,32 @@ class UnifiedDatabase {
     return updated;
   }
 
+  async updatePersisted(collection, id, updates) {
+    const col = this.getCollection(collection);
+    const index = col.findIndex((item) => String(item.id) === String(id));
+    if (index === -1) return null;
+
+    if (isMongoConnected() && modelMap[collection]) {
+      const saved = await modelMap[collection].findOneAndUpdate(
+        { id: String(id) },
+        { $set: updates },
+        { new: true, runValidators: true }
+      );
+      if (!saved) return null;
+    }
+
+    const existing = col[index];
+    const updated = {
+      ...existing,
+      ...updates,
+      id: existing.id,
+      updatedAt: new Date().toISOString(),
+    };
+    col[index] = updated;
+    this.persist();
+    return updated;
+  }
+
   remove(collection, id) {
     const col = this.getCollection(collection);
     const index = col.findIndex((item) => String(item.id) === String(id));

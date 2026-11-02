@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const categorySchema = new mongoose.Schema(
   {
     id: { type: String, required: true, unique: true, index: true },
-    name: { type: String, required: true },
+    name: { type: String, required: true, trim: true },
     emoji: { type: String, default: "✨" },
     color: { type: String, default: "#F3E8FF" },
     order: { type: Number, default: 0 },

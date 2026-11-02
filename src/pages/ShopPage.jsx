@@ -14,7 +14,12 @@ export default function ShopPage({ ctx, presetCategory }) {
     let list = [...products].filter((p) => !p.hidden);
     if (searchQuery && searchQuery.length > 1) {
       const q = searchQuery.toLowerCase();
-      list = list.filter((p) => p.name.toLowerCase().includes(q) || p.category.includes(q) || (p.desc && p.desc.toLowerCase().includes(q)));
+      list = list.filter((p) =>
+        p.name.toLowerCase().includes(q) ||
+        p.category.toLowerCase().includes(q) ||
+        activeCategories.find((category) => category.id === p.category)?.name.toLowerCase().includes(q) ||
+        (p.desc && p.desc.toLowerCase().includes(q))
+      );
     }
     if (activeCategory) list = list.filter((p) => p.category === activeCategory);
     if (filters.onlyAvail) list = list.filter((p) => p.stock > 0);

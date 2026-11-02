@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import {
-  LayoutDashboard, Boxes, Tags, ClipboardList, Users, Package, Percent,
+  LayoutDashboard, Boxes, Tags, ClipboardList, Users, Package, Percent, PlusCircle,
   MessageSquareText, Settings, LogOut, Menu,
 } from "lucide-react";
 import AdminDashboard from "./AdminDashboard";
@@ -23,8 +23,10 @@ export default function AdminApp({ ctx }) {
 
   const NAV = [
     ["dashboard", "Dashboard", LayoutDashboard],
-    ["products", "Products", Boxes],
-    ["categories", "Categories", Tags],
+    ["products", "Manage Products", Boxes],
+    ["add-product", "Add Product", PlusCircle],
+    ["categories", "Manage Categories", Tags],
+    ["add-category", "Add Category", PlusCircle],
     ["orders", "Orders", ClipboardList],
     ["customers", "Customers", Users],
     ["inventory", "Inventory", Package],
@@ -62,7 +64,9 @@ export default function AdminApp({ ctx }) {
         <div style={{ padding: 20 }}>
           {page === "dashboard" && <AdminDashboard ctx={ctx} />}
           {page === "products" && <AdminProducts ctx={ctx} />}
+          {page === "add-product" && <AdminProducts ctx={ctx} initialCreate />}
           {page === "categories" && <AdminCategories ctx={ctx} />}
+          {page === "add-category" && <AdminCategories ctx={ctx} initialCreate />}
           {page === "orders" && <AdminOrders ctx={ctx} />}
           {page === "customers" && <AdminCustomers ctx={ctx} />}
           {page === "inventory" && <AdminInventory ctx={ctx} />}
