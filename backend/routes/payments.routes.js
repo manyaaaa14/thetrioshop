@@ -20,7 +20,7 @@ function validateOrderDraft(orderDraft) {
   }
 }
 
-function getOrderQuote(orderDraft) {
+async function getOrderQuote(orderDraft) {
   validateOrderDraft(orderDraft);
   const validatedItems = [];
   let subtotal = 0;
@@ -33,7 +33,7 @@ function getOrderQuote(orderDraft) {
     if (!Number.isSafeInteger(quantity) || quantity <= 0) {
       throw new Error("Order quantities must be positive whole numbers.");
     }
-    const product = db.findById("products", item.id);
+    const product = await db.findByIdPersisted("products", item.id);
     if (!product) {
       throw new Error(`Product ${item.id} not found.`);
     }
@@ -79,14 +79,14 @@ router.get("/config", (req, res) => {
   res.json({ success: true, directUpiId: process.env.PAYMENT_UPI_ID || null });
 });
 
-router.post("/direct-quote", (req, res) => {
+router.post("/direct-quote", async (req, res) => {
   try {
     const upiId = process.env.PAYMENT_UPI_ID;
     if (!upiId) {
       return res.status(503).json({ success: false, message: "Direct UPI QR payment is not configured." });
     }
     const { orderDraft } = req.body || {};
-    const quote = getOrderQuote(orderDraft);
+    const quote = await getOrderQuote(orderDraft);
     const upiUri = `upi://pay?${new URLSearchParams({
       pa: upiId,
       pn: "BLORA",
@@ -116,20 +116,20 @@ router.post("/direct-order", optionalUser, async (req, res) => {
     if (duplicateReference) {
       return res.status(409).json({ success: false, message: "That transaction reference has already been submitted." });
     }
-    const quote = getOrderQuote(orderDraft);
+    const quote = await getOrderQuote(orderDraft);
     if (!Number.isFinite(Number(expectedTotal)) || Math.round(Number(expectedTotal) * 100) !== Math.round(quote.total * 100)) {
       return res.status(409).json({ success: false, message: "The checkout total changed. Generate a new payment QR and try again." });
     }
     for (const item of quote.items) {
-      const product = db.findById("products", item.id);
+      const product = await db.findByIdPersisted("products", item.id);
       if (!product || product.stock < item.qty) {
         return res.status(409).json({ success: false, message: `Stock changed for "${item.name}". Refresh checkout before submitting payment.` });
       }
     }
 
     for (const item of quote.items) {
-      const product = db.findById("products", item.id);
-      db.update("products", product.id, { stock: product.stock - item.qty });
+      const product = await db.findByIdPersisted("products", item.id);
+      await db.updatePersisted("products", product.id, { stock: product.stock - item.qty });
     }
 
     const now = new Date().toISOString();

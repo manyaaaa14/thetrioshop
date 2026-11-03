@@ -11,7 +11,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "seed": "node backend/db/seed.js",
-    "test": "node --test backend/middleware/authProtection.test.js backend/services/password.test.js backend/routes/authFlow.test.js",
+    "test": "node --import ./backend/test-env.js --test backend/middleware/authProtection.test.js backend/services/password.test.js backend/routes/authFlow.test.js backend/routes/catalogPersistence.test.js",
     "start": "node server.js"
   },
   "dependencies": {

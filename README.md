@@ -122,7 +122,9 @@ The Firebase Web configuration is public client configuration; the service-accou
 
 ## 🗄️ Database Architecture
 
-The backend uses a zero-configuration persistent JSON database (`backend/data/store.json`) with atomic file writes. It requires **no external database server installation** on Windows and starts immediately.
+The backend uses MongoDB as the production source of truth. Configure `MONGODB_URI` (or `MONGO_URI`) in the backend deployment environment; production startup fails rather than falling back to local files when MongoDB is missing or unavailable. Product and category reads are refreshed from MongoDB, and catalog writes are acknowledged only after the database confirms them.
+
+For local development without MongoDB, the backend can use `backend/data/store.json` with atomic file writes. This fallback is intended for local development only and is not durable on hosts with ephemeral filesystems.
 
 The product and category catalog is managed through the admin and is not populated from frontend fixtures. Running the seed command refreshes demo orders, coupons, banners, and reviews while preserving catalog data:
 ```bash

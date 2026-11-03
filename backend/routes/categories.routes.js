@@ -19,9 +19,9 @@ function isValidCategoryMetadata({ emoji, color }) {
 }
 
 // GET /api/categories - All categories
-router.get("/", (req, res) => {
+router.get("/", async (req, res) => {
   try {
-    const categories = db.find("categories");
+    const categories = await db.findPersisted("categories");
     res.json({ success: true, categories });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -44,7 +44,7 @@ router.post("/", protectAdmin, async (req, res) => {
     if (!id) {
       return res.status(400).json({ success: false, message: "Category name must contain letters or numbers." });
     }
-    const existing = db.findOne("categories", (category) =>
+    const existing = await db.findOnePersisted("categories", (category) =>
       category.id === id || (category.name || "").toLowerCase() === normalizedName.toLowerCase()
     );
     if (existing) {
@@ -68,7 +68,7 @@ router.post("/", protectAdmin, async (req, res) => {
 // PUT /api/categories/:id - Update category (Admin)
 router.put("/:id", protectAdmin, async (req, res) => {
   try {
-    const category = db.findById("categories", req.params.id);
+    const category = await db.findByIdPersisted("categories", req.params.id);
     if (!category) {
       return res.status(404).json({ success: false, message: "Category not found" });
     }
@@ -82,7 +82,7 @@ router.put("/:id", protectAdmin, async (req, res) => {
       if (typeof name !== "string" || !name.trim() || name.trim().length > 80) {
         return res.status(400).json({ success: false, message: "Category name must be between 1 and 80 characters." });
       }
-      const duplicate = db.findOne("categories", (item) =>
+      const duplicate = await db.findOnePersisted("categories", (item) =>
         item.id !== req.params.id && (item.name || "").toLowerCase() === name.trim().toLowerCase()
       );
       if (duplicate) return res.status(409).json({ success: false, message: "A category with this name already exists." });
@@ -109,11 +109,11 @@ router.put("/:id", protectAdmin, async (req, res) => {
 router.delete("/:id", protectAdmin, async (req, res) => {
   try {
     const categoryId = req.params.id.toLowerCase();
-    const category = db.findById("categories", req.params.id);
+    const category = await db.findByIdPersisted("categories", req.params.id);
     if (!category) {
       return res.status(404).json({ success: false, message: "Category not found" });
     }
-    const linkedProduct = db.findOne("products", (product) =>
+    const linkedProduct = await db.findOnePersisted("products", (product) =>
       product.category?.toLowerCase() === categoryId ||
       product.category?.toLowerCase() === category.name.toLowerCase()
     );

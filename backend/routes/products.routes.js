@@ -25,18 +25,18 @@ function validateProductImages(images) {
     }, 0) <= MAX_TOTAL_IMAGE_BYTES;
 }
 
-function findCategory(category) {
+async function findCategory(category) {
   const categoryQuery = String(category || "").toLowerCase().trim();
-  return db.findOne("categories", (item) =>
+  return db.findOnePersisted("categories", (item) =>
     item.id.toLowerCase() === categoryQuery || (item.name || "").toLowerCase() === categoryQuery
   );
 }
 
 // GET /api/products - Get all products with search, filtering & sorting
-router.get("/", (req, res) => {
+router.get("/", async (req, res) => {
   try {
     const { category, search, minPrice, maxPrice, sort, onlyAvailable, badge } = req.query;
-    let products = db.find("products", (p) => !p.hidden);
+    let products = await db.findPersisted("products", (p) => !p.hidden);
 
     if (category && category !== "all") {
       products = products.filter((p) => p.category.toLowerCase() === category.toLowerCase());
@@ -93,9 +93,9 @@ router.get("/", (req, res) => {
 });
 
 // GET /api/products/admin/all - Get all products including hidden (Admin only)
-router.get("/admin/all", protectAdmin, (req, res) => {
+router.get("/admin/all", protectAdmin, async (req, res) => {
   try {
-    const products = db.find("products");
+    const products = await db.findPersisted("products");
     res.json({ success: true, count: products.length, products });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -103,9 +103,9 @@ router.get("/admin/all", protectAdmin, (req, res) => {
 });
 
 // GET /api/products/:id - Single product
-router.get("/:id", (req, res) => {
+router.get("/:id", async (req, res) => {
   try {
-    const product = db.findById("products", req.params.id);
+    const product = await db.findByIdPersisted("products", req.params.id);
     if (!product) {
       return res.status(404).json({ success: false, message: "Product not found" });
     }
@@ -135,7 +135,7 @@ router.post("/", protectAdmin, async (req, res) => {
       typeof (desc ?? description ?? "") !== "string") {
       return res.status(400).json({ success: false, message: "Enter a product name, valid category, price, discount price, description, and non-negative whole-number stock quantity." });
     }
-    const matchedCategory = findCategory(category);
+    const matchedCategory = await findCategory(category);
     if (!matchedCategory) {
       return res.status(400).json({ success: false, message: "Select an existing product category." });
     }
@@ -176,9 +176,7 @@ router.post("/", protectAdmin, async (req, res) => {
 // DELETE /api/products/admin/all/clear - Clear all products (Admin)
 router.delete("/admin/all/clear", protectAdmin, async (req, res) => {
   try {
-    const products = db.getCollection("products");
-    products.length = 0;
-    db.persist();
+    await db.clearPersisted("products");
     res.json({ success: true, message: "All products cleared successfully!" });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -188,7 +186,7 @@ router.delete("/admin/all/clear", protectAdmin, async (req, res) => {
 // PUT /api/products/:id - Update product (Admin)
 router.put("/:id", protectAdmin, async (req, res) => {
   try {
-    const product = db.findById("products", req.params.id);
+    const product = await db.findByIdPersisted("products", req.params.id);
     if (!product) {
       return res.status(404).json({ success: false, message: "Product not found" });
     }
@@ -258,7 +256,7 @@ router.put("/:id", protectAdmin, async (req, res) => {
       return res.status(400).json({ success: false, message: "Product visibility must be true or false." });
     }
     if (updates.category !== undefined) {
-      const matchedCategory = findCategory(updates.category);
+      const matchedCategory = await findCategory(updates.category);
       if (!matchedCategory) {
         return res.status(400).json({ success: false, message: "Select an existing product category." });
       }
@@ -294,14 +292,15 @@ router.delete("/:id", protectAdmin, async (req, res) => {
 });
 
 // PATCH /api/products/:id/stock - Adjust stock (Admin)
-router.patch("/:id/stock", protectAdmin, (req, res) => {
+router.patch("/:id/stock", protectAdmin, async (req, res) => {
   try {
     const { stock } = req.body;
-    if (stock === undefined) {
-      return res.status(400).json({ success: false, message: "Stock quantity required." });
+    const quantity = Number(stock);
+    if (!Number.isInteger(quantity) || quantity < 0) {
+      return res.status(400).json({ success: false, message: "Stock quantity must be a non-negative whole number." });
     }
 
-    const updated = db.update("products", req.params.id, { stock: Math.max(0, Number(stock)) });
+    const updated = await db.updatePersisted("products", req.params.id, { stock: quantity });
     if (!updated) {
       return res.status(404).json({ success: false, message: "Product not found" });
     }

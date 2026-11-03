@@ -15,10 +15,10 @@ const DEFAULT_ANNOUNCEMENT = {
 };
 
 // GET /api/admin/stats - Admin Dashboard Analytics
-router.get("/stats", protectAdmin, (req, res) => {
+router.get("/stats", protectAdmin, async (req, res) => {
   try {
     const orders = db.find("orders");
-    const products = db.find("products");
+    const products = await db.findPersisted("products");
     const users = db.find("users", (u) => u.role !== "admin");
 
     const nonCancelledOrders = orders.filter((o) => !o.cancelled && o.status !== "Cancelled");
@@ -122,7 +122,7 @@ router.get("/banners/manage", protectAdmin, (req, res) => {
 });
 
 // PUT /api/admin/banners - Update homepage banners (Admin)
-router.put("/banners", protectAdmin, (req, res) => {
+router.put("/banners", protectAdmin, async (req, res) => {
   try {
     const { banners } = req.body;
     if (!Array.isArray(banners) || banners.length > 10) {
@@ -130,7 +130,7 @@ router.put("/banners", protectAdmin, (req, res) => {
     }
 
     const validDestinations = new Set(["shop", "category", "about", "contact"]);
-    const categoryIds = new Set(db.find("categories").map((category) => category.id));
+    const categoryIds = new Set((await db.findPersisted("categories")).map((category) => category.id));
     const normalizedBanners = banners.map((banner, index) => {
       if (!banner || typeof banner !== "object" || Array.isArray(banner)) {
         throw new BannerInputError(`Banner ${index + 1} is invalid.`);

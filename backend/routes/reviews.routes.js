@@ -18,7 +18,7 @@ router.get("/product/:productId", (req, res) => {
 });
 
 // POST /api/reviews - Add customer review
-router.post("/", optionalUser, (req, res) => {
+router.post("/", optionalUser, async (req, res) => {
   try {
     const { productId, rating, comment, userName } = req.body;
 
@@ -43,7 +43,7 @@ router.post("/", optionalUser, (req, res) => {
     const productReviews = db.find("reviews", (r) => r.productId === productId);
     const avgRating = productReviews.reduce((sum, r) => sum + r.rating, 0) / productReviews.length;
 
-    db.update("products", productId, {
+    await db.updatePersisted("products", productId, {
       rating: Number(avgRating.toFixed(1)),
       ratingCount: productReviews.length,
     });

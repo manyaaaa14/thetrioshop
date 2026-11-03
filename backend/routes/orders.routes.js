@@ -45,7 +45,7 @@ router.get("/:id", (req, res) => {
 });
 
 // PATCH /api/orders/:id/cancel - Cancel order (User or Admin)
-router.patch("/:id/cancel", (req, res) => {
+router.patch("/:id/cancel", async (req, res) => {
   try {
     const order = db.findById("orders", req.params.id);
     if (!order) {
@@ -63,9 +63,9 @@ router.patch("/:id/cancel", (req, res) => {
     // Restore product stock
     if (order.items && Array.isArray(order.items)) {
       for (const item of order.items) {
-        const p = db.findById("products", item.id);
+        const p = await db.findByIdPersisted("products", item.id);
         if (p) {
-          db.update("products", p.id, { stock: p.stock + (item.qty || 1) });
+          await db.updatePersisted("products", p.id, { stock: p.stock + (item.qty || 1) });
         }
       }
     }
@@ -117,7 +117,7 @@ router.patch("/:id/verify-payment", protectAdmin, (req, res) => {
 });
 
 // PATCH /api/orders/:id/status - Admin update order status
-router.patch("/:id/status", protectAdmin, (req, res) => {
+router.patch("/:id/status", protectAdmin, async (req, res) => {
   try {
     const { status, note } = req.body;
     const order = db.findById("orders", req.params.id);
@@ -136,9 +136,9 @@ router.patch("/:id/status", protectAdmin, (req, res) => {
     if (isCancelled && !order.cancelled) {
       // Restore stock on admin cancellation
       for (const item of order.items || []) {
-        const p = db.findById("products", item.id);
+        const p = await db.findByIdPersisted("products", item.id);
         if (p) {
-          db.update("products", p.id, { stock: p.stock + (item.qty || 1) });
+          await db.updatePersisted("products", p.id, { stock: p.stock + (item.qty || 1) });
         }
       }
     }
